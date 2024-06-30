@@ -1,0 +1,174 @@
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>Repositories</h1>
+      <p>Everything the sync pipeline has persisted for the connected account.</p>
+    </div>
+  </div>
+
+  <div class="notice" *ngIf="!session.isConnected()">
+    <mat-icon aria-hidden="true">link_off</mat-icon>
+    <span>No account is connected. <a routerLink="/connection">Connect one</a> to see repositories here.</span>
+  </div>
+
+  <div class="notice error" *ngIf="error()">
+    <mat-icon aria-hidden="true">error_outline</mat-icon>
+    <span>{{ error() }}</span>
+  </div>
+
+  <div class="layout" [class.with-panel]="selected()">
+    <section class="card">
+      <div class="filters">
+        <div class="field">
+          <label for="repo-search">Search</label>
+          <input
+            id="repo-search"
+            type="search"
+            placeholder="owner/name"
+            [value]="query"
+            (input)="onSearch($any($event.target).value)"
+          />
+        </div>
+
+        <div class="field">
+          <label for="repo-language">Language</label>
+          <select id="repo-language" [(ngModel)]="language" (ngModelChange)="load(1)">
+            <option value="">All languages</option>
+            <option *ngFor="let name of languages()" [value]="name">{{ name }}</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="repo-sort">Sort by</label>
+          <select id="repo-sort" [(ngModel)]="sort" (ngModelChange)="load(1)">
+            <option value="pushed">Recently pushed</option>
+            <option value="stars">Stars</option>
+            <option value="name">Name</option>
+          </select>
+        </div>
+      </div>
+
+      <table class="data" *ngIf="page() as result">
+        <thead>
+          <tr>
+            <th>Repository</th>
+            <th>Language</th>
+            <th class="num">Stars</th>
+            <th class="num">Open issues</th>
+            <th>Last push</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            *ngFor="let repo of result.items"
+            class="row"
+            [class.selected]="selected()?.externalId === repo.externalId"
+            (click)="select(repo)"
+          >
+            <td>
+              <span class="name">{{ repo.fullName }}</span>
+              <span class="description" *ngIf="repo.description">{{ repo.description }}</span>
+              <span class="topics" *ngIf="repo.topics?.length">
+                <span class="chip" *ngFor="let topic of repo.topics">{{ topic }}</span>
+              </span>
+            </td>
+            <td class="secondary">{{ repo.language ?? '—' }}</td>
+            <td class="num">{{ repo.stars | number }}</td>
+            <td class="num">{{ repo.openIssues | number }}</td>
+            <td class="secondary">{{ repo.pushedAt ? (repo.pushedAt | date: 'd MMM y') : '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p class="empty" *ngIf="page() && page()!.items.length === 0 && !loading()">
+        No repositories match those filters.
+      </p>
+
+      <div class="pager" *ngIf="page() as result">
+        <span class="muted">{{ rangeLabel() }}</span>
+        <div class="pager-buttons">
+          <button class="btn" (click)="load(result.page - 1)" [disabled]="result.page <= 1 || loading()">
+            Previous
+          </button>
+          <button class="btn" (click)="load(result.page + 1)" [disabled]="!result.hasNext || loading()">
+            Next
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <aside class="card panel" *ngIf="selected() as repo">
+      <div class="panel-head">
+        <div>
+          <h2>{{ repo.fullName }}</h2>
+          <span class="muted">Activity summary</span>
+        </div>
+        <button class="btn icon-only" (click)="close()" aria-label="Close summary">
+          <mat-icon aria-hidden="true">close</mat-icon>
+        </button>
+      </div>
+
+      <div class="panel-body">
+        <p class="empty" *ngIf="insightLoading()">Summarising…</p>
+
+        <ng-container *ngIf="insight() as summary">
+          <span class="source-chip" [class.model]="summary.source === 'model'">
+            <mat-icon aria-hidden="true">{{
+              summary.source === 'model' ? 'auto_awesome' : 'functions'
+            }}</mat-icon>
+            {{ summary.source === 'model' ? 'Written by Claude' : 'Computed locally' }}
+          </span>
+
+          <h3>{{ summary.headline }}</h3>
+          <p class="secondary">{{ summary.summary }}</p>
+
+          <h4>Highlights</h4>
+          <ul>
+            <li *ngFor="let item of summary.highlights">{{ item }}</li>
+          </ul>
+
+          <h4>Risks</h4>
+          <ul>
+            <li *ngFor="let item of summary.risks">{{ item }}</li>
+          </ul>
+
+          <h4>Facts it was given</h4>
+          <dl class="facts">
+            <div>
+              <dt>Commits (30d)</dt>
+              <dd>{{ summary.facts.commitsLast30Days }}</dd>
+            </div>
+            <div>
+              <dt>Commits (90d)</dt>
+              <dd>{{ summary.facts.commitsLast90Days }}</dd>
+            </div>
+            <div>
+              <dt>Open issues</dt>
+              <dd>{{ summary.facts.openIssues }}</dd>
+            </div>
+            <div>
+              <dt>Closed issues</dt>
+              <dd>{{ summary.facts.closedIssues }}</dd>
+            </div>
+            <div>
+              <dt>Open PRs</dt>
+              <dd>{{ summary.facts.openPullRequests }}</dd>
+            </div>
+            <div>
+              <dt>Merged PRs</dt>
+              <dd>{{ summary.facts.mergedPullRequests }}</dd>
+            </div>
+          </dl>
+
+          <h4>Top contributors</h4>
+          <ul class="contributors">
+            <li *ngFor="let person of summary.facts.contributors">
+              <span>{{ person.login }}</span>
+              <span class="muted">{{ person.commits }} commits</span>
+            </li>
+          </ul>
+        </ng-container>
+      </div>
+    </aside>
+  </div>
+</div>

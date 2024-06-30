@@ -1,0 +1,73 @@
+.narrow {
+  max-width: 820px;
+}
+
+.notice {
+  margin-bottom: 16px;
+}
+
+.notice mat-icon,
+.note mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+.card {
+  margin-bottom: 16px;
+}
+
+.connection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.identity h2 {
+  font-size: 15px;
+}
+
+.identity p {
+  margin: 2px 0 0;
+}
+
+.logo {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.note {
+  display: flex;
+  gap: 10px;
+  padding-top: 0;
+  color: var(--text-secondary);
+}
+
+.chip.ok {
+  background: color-mix(in srgb, var(--status-good) 12%, var(--surface-card));
+  color: #0a6b0a;
+}
+
+.footnote {
+  margin-top: 4px;
+}

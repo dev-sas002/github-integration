@@ -1,0 +1,42 @@
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.card {
+  margin-bottom: 16px;
+}
+
+.two-up {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+  gap: 16px;
+}
+
+.two-up .card {
+  margin-bottom: 16px;
+}
+
+@media (max-width: 900px) {
+  .two-up {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.notice {
+  margin-bottom: 16px;
+}
+
+.notice mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+td.bad {
+  color: var(--status-critical);
+  font-weight: 600;
+}

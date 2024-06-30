@@ -1,0 +1,109 @@
+# One command brings up the whole demo:
+#
+#   docker compose up --build
+#
+# It starts MongoDB, seeds a fabricated account, runs the API and the web app,
+# and serves a stand-in for api.github.com so the sync pipeline can be watched
+# doing real work with no GitHub account and no credentials.
+#
+# Open http://localhost:8230 and choose "Open the demo account".
+
+name: github-integration
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # A stand-in for api.github.com: Link pagination, ETags, rate-limit headers.
+  mock-github:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    command: ['node', 'dist/dev/mockGithubServer.js']
+    environment:
+      MOCK_GITHUB_PORT: '4100'
+      # Must be the address the API container resolves, because it is echoed
+      # back in the Link header the pipeline follows.
+      MOCK_GITHUB_PUBLIC_URL: http://mock-github:4100
+    ports:
+      - '8233:4100'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:4100/user').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  # One-shot: writes the demo account, then exits. The API waits for it.
+  seed:
+    build:
+      context: ./backend
+    command: ['node', 'dist/scripts/seed.js']
+    restart: 'no'
+    environment:
+      SERVER_PORT: '3000'
+      DB_URL: mongodb://mongo:27017/integrations
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  api:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: '3000'
+      DB_URL: mongodb://mongo:27017/integrations
+      # The browser reaches the app through the web container's port.
+      FRONTEND_URL: http://localhost:8230
+      CORS_ORIGINS: http://localhost:8230
+      # No OAuth app is configured on purpose: the service is designed to boot
+      # and serve read traffic with no GitHub credentials at all.
+      GITHUB_REDIRECT_URI: http://localhost:8231/api/github/callback
+      # Point the pipeline at the stand-in so "Sync now" does real paginated,
+      # conditional, rate-limit-aware work offline.
+      GITHUB_API_BASE_URL: http://mock-github:4100
+      SYNC_PAGE_SIZE: '50'
+      SYNC_MAX_PAGES: '10'
+      SYNC_CONCURRENCY: '3'
+      # Demo only. Exposes GET /api/demo/session, which hands out the seeded
+      # account's token. Never enable this on a real deployment.
+      DEMO_MODE: 'true'
+      LOG_LEVEL: info
+    ports:
+      - '8231:3000'
+    depends_on:
+      mongo:
+        condition: service_healthy
+      seed:
+        condition: service_completed_successfully
+      mock-github:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    ports:
+      - '8230:8080'
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  mongo-data:

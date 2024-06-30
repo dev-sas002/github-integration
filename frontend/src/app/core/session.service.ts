@@ -1,0 +1,68 @@
+import { isPlatformBrowser } from '@angular/common';
+import { Inject, Injectable, PLATFORM_ID, computed, signal } from '@angular/core';
+/** Key the OAuth callback's token is persisted under. */
+export const ACCESS_TOKEN_STORAGE_KEY = 'accessToken';
+
+const USERNAME_STORAGE_KEY = 'accountUsername';
+
+/**
+ * The signed-in session, as reactive state.
+ *
+ * The token lives in `localStorage` (it is what the backend hands back at the
+ * end of the OAuth redirect), but nothing reads that key directly: views read
+ * the signals, so a connect or disconnect updates every view at once instead
+ * of leaving stale chrome behind.
+ *
+ * Every access is guarded by a platform check because the app is prerendered,
+ * and `localStorage` does not exist on the server.
+ */
+@Injectable({ providedIn: 'root' })
+export class SessionService {
+  private readonly browser: boolean;
+
+  private readonly tokenSignal = signal<string | null>(null);
+
+  private readonly usernameSignal = signal<string | null>(null);
+
+  readonly token = this.tokenSignal.asReadonly();
+
+  readonly username = this.usernameSignal.asReadonly();
+
+  readonly isConnected = computed(() => this.tokenSignal() !== null);
+
+  constructor(@Inject(PLATFORM_ID) platformId: object) {
+    this.browser = isPlatformBrowser(platformId);
+
+    if (this.browser) {
+      this.tokenSignal.set(localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY));
+      this.usernameSignal.set(localStorage.getItem(USERNAME_STORAGE_KEY));
+    }
+  }
+
+  /** Stores the header value exactly as received — it already carries `Bearer `. */
+  signIn(token: string, username?: string | null): void {
+    this.tokenSignal.set(token);
+    this.usernameSignal.set(username ?? null);
+
+    if (!this.browser) {
+      return;
+    }
+
+    localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token);
+    if (username) {
+      localStorage.setItem(USERNAME_STORAGE_KEY, username);
+    } else {
+      localStorage.removeItem(USERNAME_STORAGE_KEY);
+    }
+  }
+
+  signOut(): void {
+    this.tokenSignal.set(null);
+    this.usernameSignal.set(null);
+
+    if (this.browser) {
+      localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+      localStorage.removeItem(USERNAME_STORAGE_KEY);
+    }
+  }
+}

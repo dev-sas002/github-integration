@@ -1,0 +1,94 @@
+<div class="page narrow">
+  <div class="page-head">
+    <div>
+      <h1>Connection</h1>
+      <p>Link a source provider so the sync pipeline has an account to read from.</p>
+    </div>
+  </div>
+
+  <div class="notice error" *ngIf="errorMessage()">
+    <mat-icon aria-hidden="true">error_outline</mat-icon>
+    <span>{{ errorMessage() }}</span>
+  </div>
+
+  <section class="card">
+    <div class="card-body connection">
+      <div class="identity">
+        <mat-icon class="logo" aria-hidden="true">code</mat-icon>
+        <div>
+          <h2>GitHub</h2>
+          <p class="secondary" *ngIf="session.isConnected(); else notConnected">
+            Connected<ng-container *ngIf="session.username() as name"> as {{ name }}</ng-container
+            ><ng-container *ngIf="connectionDate() as since">
+              · since {{ since | date: 'd MMM y' }}</ng-container
+            >
+          </p>
+          <ng-template #notConnected>
+            <p class="secondary">Not connected.</p>
+          </ng-template>
+        </div>
+      </div>
+
+      <div class="actions" *ngIf="!session.isConnected()">
+        <button class="btn btn-primary" (click)="connect()" [disabled]="!githubConfigured">
+          <mat-icon aria-hidden="true">link</mat-icon>
+          Connect with GitHub
+        </button>
+        <button class="btn" *ngIf="demoAvailable()" (click)="useDemoAccount()" [disabled]="busy()">
+          <mat-icon aria-hidden="true">play_circle_outline</mat-icon>
+          Open the demo account
+        </button>
+      </div>
+
+      <div class="actions" *ngIf="session.isConnected()">
+        <button class="btn" (click)="disconnect()" [disabled]="busy()">
+          <mat-icon aria-hidden="true">link_off</mat-icon>
+          Disconnect
+        </button>
+      </div>
+    </div>
+
+    <div class="card-body note" *ngIf="!githubConfigured">
+      <mat-icon aria-hidden="true">info_outline</mat-icon>
+      <span>
+        No GitHub OAuth app is configured on this deployment, so the connect flow is disabled. Set
+        <code class="mono">GITHUB_CLIENT_ID</code> and <code class="mono">GITHUB_CLIENT_SECRET</code>
+        to enable it — the rest of the API runs without them.
+      </span>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Providers</h2>
+      <span class="hint">Everything registered in the provider registry</span>
+    </div>
+    <div class="card-body">
+      <table class="data">
+        <thead>
+          <tr>
+            <th>Provider</th>
+            <th>Identifier</th>
+            <th>Credentials</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let provider of providers()">
+            <td>{{ provider.displayName }}</td>
+            <td class="mono secondary">{{ provider.id }}</td>
+            <td>
+              <span class="chip" [class.ok]="provider.configured">
+                {{ provider.configured ? 'Configured' : 'Not configured' }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="empty" *ngIf="!providers().length">Could not reach the API.</p>
+    </div>
+  </section>
+
+  <p class="secondary footnote">
+    Once connected, head to the <a routerLink="/dashboard">overview</a> and run a sync.
+  </p>
+</div>

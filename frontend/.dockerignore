@@ -1,0 +1,9 @@
+.git
+.gitignore
+node_modules
+dist
+coverage
+.angular
+*.log
+Dockerfile
+.dockerignore

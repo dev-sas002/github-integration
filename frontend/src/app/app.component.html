@@ -1,0 +1,26 @@
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" routerLink="/dashboard">
+      <mat-icon aria-hidden="true">hub</mat-icon>
+      <span>Repo Sync</span>
+    </a>
+
+    <nav aria-label="Primary">
+      <a routerLink="/dashboard" routerLinkActive="active">Overview</a>
+      <a routerLink="/repositories" routerLinkActive="active">Repositories</a>
+      <a routerLink="/pull-requests" routerLinkActive="active">Pull requests</a>
+      <a routerLink="/connection" routerLinkActive="active">Connection</a>
+    </nav>
+
+    <div class="account">
+      <span class="chip" *ngIf="session.username() as name">
+        <mat-icon aria-hidden="true">account_circle</mat-icon>{{ name }}
+      </span>
+      <span class="chip" *ngIf="!session.username()">Not connected</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <router-outlet />
+</main>
