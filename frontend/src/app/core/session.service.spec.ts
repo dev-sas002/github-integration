@@ -48,6 +48,16 @@ describe('SessionService', () => {
     expect(session.username()).toBeNull();
   });
 
+  it('records an account name learned after sign-in', () => {
+    const session = serviceFor('browser');
+    session.signIn('Bearer gho_token');
+
+    session.setUsername('fixture-dev');
+
+    expect(session.username()).toBe('fixture-dev');
+    expect(serviceFor('browser').username()).toBe('fixture-dev');
+  });
+
   it('forgets everything on sign out', () => {
     const session = serviceFor('browser');
     session.signIn('Bearer gho_token', 'octo');

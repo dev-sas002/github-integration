@@ -56,6 +56,15 @@ export class SessionService {
     }
   }
 
+  /** Fills in the account name when the session started without one. */
+  setUsername(username: string): void {
+    this.usernameSignal.set(username);
+
+    if (this.browser) {
+      localStorage.setItem(USERNAME_STORAGE_KEY, username);
+    }
+  }
+
   signOut(): void {
     this.tokenSignal.set(null);
     this.usernameSignal.set(null);

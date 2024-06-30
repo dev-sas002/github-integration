@@ -6,6 +6,7 @@ import { environment } from '../../environments/environment';
 export interface GithubStatus {
   isConnected: boolean;
   connectionDate: string | null;
+  username?: string | null;
 }
 
 @Injectable({

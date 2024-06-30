@@ -78,7 +78,7 @@ import appConfig from '../src/config/appConfig';
 import { errorHandler } from '../src/http/middleware/errorHandler';
 import { createOAuthState, resetOAuthStates } from '../src/helpers/oauthState';
 
-const FRONTEND_RETURN = 'http://localhost:4200/github-integration';
+const FRONTEND_RETURN = 'http://localhost:4200/connection';
 
 const buildApp = (): Express => {
   const app = express();
@@ -224,7 +224,7 @@ describe('GET /api/github/callback', () => {
 
     expect(res.status).toBe(302);
     expect(res.headers.location).toBe(
-      `${FRONTEND_RETURN}?token=${encodeURIComponent('Bearer gho_token')}`,
+      `${FRONTEND_RETURN}#token=${encodeURIComponent('Bearer gho_token')}&username=octocat`,
     );
 
     expect(mocks.UserModel).toHaveBeenCalledWith({
@@ -344,7 +344,7 @@ describe('GET /api/github/status', () => {
 
   it('reports the connection and its date for a connected user', async () => {
     const connectedAt = new Date('2024-05-01T10:00:00.000Z');
-    mocks.UserModel.findOne.mockResolvedValue({ _id: 'u1' });
+    mocks.UserModel.findOne.mockResolvedValue({ _id: 'u1', username: 'octocat' });
     mocks.IntegrationModel.findOne.mockResolvedValue({ connectedAt });
 
     const res = await request(app)
@@ -355,6 +355,7 @@ describe('GET /api/github/status', () => {
     expect(res.body).toEqual({
       isConnected: true,
       connectionDate: connectedAt.toISOString(),
+      username: 'octocat',
     });
   });
 
@@ -366,7 +367,7 @@ describe('GET /api/github/status', () => {
       .get('/api/github/status')
       .set('Authorization', 'Bearer gho_token');
 
-    expect(res.body).toEqual({ isConnected: false, connectionDate: null });
+    expect(res.body).toEqual({ isConnected: false, connectionDate: null, username: null });
   });
 
   it('URL-decodes the Authorization header before the lookup', async () => {

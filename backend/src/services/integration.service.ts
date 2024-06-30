@@ -14,7 +14,7 @@ import { purgeSyncedData } from './syncPersistence';
 export const DEMO_GITHUB_ID = 'demo-1';
 
 /** Where the SPA expects to be dropped back after the OAuth round trip. */
-export const frontendReturnUrl = `${appConfig.frontendUrl}/github-integration`;
+export const frontendReturnUrl = `${appConfig.frontendUrl}/connection`;
 
 const provider = (providerId: string): SourceProvider => {
   const found = getProvider(providerId);
@@ -109,8 +109,10 @@ export const completeAuthorization = async (
   const account = await source.getAuthenticatedAccount(token);
   await linkAccount(account, token, source.displayName);
 
+  // The token rides in the fragment, which browsers never send to a server:
+  // in the query string it would land in proxy access logs and Referer headers.
   return {
-    redirectUrl: `${frontendReturnUrl}?token=${encodeURIComponent(token)}`,
+    redirectUrl: `${frontendReturnUrl}#token=${encodeURIComponent(token)}&username=${encodeURIComponent(account.username)}`,
   };
 };
 

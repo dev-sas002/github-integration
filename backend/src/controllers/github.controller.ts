@@ -50,6 +50,7 @@ export const checkStatus = async (req: Request, res: Response): Promise<void> =>
   res.json({
     isConnected: status.isConnected,
     connectionDate: status.connectionDate ?? null,
+    username: req.auth!.username || null,
   });
 };
 
