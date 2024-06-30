@@ -43,6 +43,11 @@
   </div>
 
   <ng-container *ngIf="overview() as data">
+    <div class="notice" *ngIf="data.counts.repositories === 0 && !syncing()">
+      <mat-icon aria-hidden="true">inbox</mat-icon>
+      <span>Nothing has been synced for this account yet. Press <strong>Sync now</strong> to run the pipeline.</span>
+    </div>
+
     <section class="tiles">
       <app-stat-tile label="Repositories" [value]="data.counts.repositories" />
       <app-stat-tile
@@ -136,5 +141,5 @@
     </section>
   </ng-container>
 
-  <p class="empty" *ngIf="loading()">Loading…</p>
+  <p class="empty" role="status" *ngIf="loading() && !overview()">Loading the overview…</p>
 </div>

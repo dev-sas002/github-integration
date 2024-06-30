@@ -84,7 +84,7 @@ export interface Overview {
   lastSyncedAt: string | null;
 }
 
-export type SyncStatus = 'ok' | 'not_modified' | 'error' | 'rate_limited';
+export type SyncStatus = 'ok' | 'partial' | 'not_modified' | 'error' | 'rate_limited';
 
 export interface SyncStateRow {
   resource: string;
@@ -94,6 +94,7 @@ export interface SyncStateRow {
   lastError: string | null;
   recordCount: number;
   hasEtag: boolean;
+  resumePending?: boolean;
 }
 
 export interface SyncReport {

@@ -61,7 +61,8 @@
   </section>
 
   <ng-template #noStale>
-    <section class="card" *ngIf="session.isConnected() && !loading()">
+    <p class="empty" role="status" *ngIf="loading()">Loading pull requests…</p>
+    <section class="card" *ngIf="session.isConnected() && !loading() && !error()">
       <p class="empty">
         Nothing is stale — every open pull request has been touched in the last
         {{ thresholdDays() }} days.

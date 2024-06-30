@@ -66,7 +66,15 @@
             (click)="select(repo)"
           >
             <td>
-              <span class="name">{{ repo.fullName }}</span>
+              <button
+                type="button"
+                class="name"
+                [attr.aria-expanded]="selected()?.externalId === repo.externalId"
+                aria-controls="repo-summary"
+                (click)="$event.stopPropagation(); select(repo)"
+              >
+                {{ repo.fullName }}
+              </button>
               <span class="description" *ngIf="repo.description">{{ repo.description }}</span>
               <span class="topics" *ngIf="repo.topics?.length">
                 <span class="chip" *ngFor="let topic of repo.topics">{{ topic }}</span>
@@ -79,6 +87,8 @@
           </tr>
         </tbody>
       </table>
+
+      <p class="empty" role="status" *ngIf="loading() && !page()">Loading repositories…</p>
 
       <p class="empty" *ngIf="page() && page()!.items.length === 0 && !loading()">
         No repositories match those filters.
@@ -97,7 +107,7 @@
       </div>
     </section>
 
-    <aside class="card panel" *ngIf="selected() as repo">
+    <aside class="card panel" id="repo-summary" *ngIf="selected() as repo" aria-live="polite">
       <div class="panel-head">
         <div>
           <h2>{{ repo.fullName }}</h2>
