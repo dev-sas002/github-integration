@@ -7,6 +7,9 @@ spending GitHub's hourly rate limit on data that has not changed**. It runs with
 credentials at all — the API boots, the read endpoints work, and a bundled stand-in for
 `api.github.com` lets the whole pipeline be watched offline.
 
+Stack: Node 22, Express 5 and TypeScript with Mongoose 8 for the API (`backend/`), and
+Angular 21 served by nginx for the dashboard (`frontend/`).
+
 ## 19 pages, then 0
 
 An authenticated token gets 5,000 REST calls an hour, and secondary limits throttle bursts
@@ -14,40 +17,45 @@ well before that. A 200-repository account costs roughly 600 calls per run just 
 its children, so an hourly sync burns most of its budget re-fetching unchanged records. The
 design is about *not making the call*.
 
-The demo stack proves it. Its seeded account has 6 repositories, tracked as **19 listings**
-— one account-wide repository listing plus commits, issues and pull requests for each of
-the 6 — which is exactly what the dashboard's *Sync pipeline state* panel shows
-(6 + 6 + 6 + 1). First run, every listing walked:
+The demo stack shows it. Its seeded account has 6 repositories, tracked as **19 listings**:
+one account-wide repository listing, plus commits, issues and pull requests for each of
+the 6. That is exactly what the dashboard's *Sync pipeline state* panel shows
+(6 + 6 + 6 + 1). On the first run every listing is walked:
 
 ```console
 $ curl -s -X POST -H "Authorization: Bearer demo-token" http://localhost:8231/api/sync
 {
+  "provider": "github",
   "mode": "incremental",
+  "durationMs": 90,
   "totals": { "repositories": 6, "commits": 2, "issues": 48, "pullRequests": 6 },
   "pagesFetched": 19,
   "conditionalHits": 0,
-  "rateLimit": { "limit": 5000, "remaining": 4899, "resetAt": 1790448338 },
-  "durationMs": 58,
-  "warnings": []
+  "rateLimit": { "limit": 5000, "remaining": 4899, "resetAt": 1794124006 },
+  "warnings": [],
+  "results": [ … one entry per listing … ]
 }
 ```
 
-Second run, moments later. Every listing answers `304 Not Modified`, which GitHub does not
+A second run moments later. Every listing answers `304 Not Modified`, which GitHub does not
 charge against the quota, so nothing is fetched at all:
 
 ```console
 $ curl -s -X POST -H "Authorization: Bearer demo-token" http://localhost:8231/api/sync
 {
   "mode": "incremental",
+  "durationMs": 37,
   "totals": { "repositories": 0, "commits": 0, "issues": 0, "pullRequests": 0 },
   "pagesFetched": 0,
   "conditionalHits": 19,
-  "durationMs": 26
+  …
 }
 ```
 
-Real captured output from a booted stack against the bundled mock — real HTTP through the
-real client, not a simulation. Timings vary; the 19 → 0 does not.
+Both are captured from the compose stack against the bundled mock: real HTTP through the
+real client, not a simulation. Timings vary; the 19 then 0 does not. (Only 2 commits arrive
+on the first run because the seed already stored the rest and the commit listing is asked
+only for what changed after its watermark.)
 
 ## Not making the call
 
@@ -80,10 +88,14 @@ sequenceDiagram
         Note over P: exponential backoff with jitter,<br/>capped — Retry-After wins outright
     end
 
-    S->>DB: store ETag, record status,<br/>advance the watermark only on success
+    alt Listing walked to the end
+        S->>DB: store ETag, advance the watermark
+    else Stopped at the page cap or quota floor
+        S->>DB: keep watermark + ETag, store the cursor<br/>the next run resumes from
+    end
     Note over S,DB: Repeat per repository, SYNC_CONCURRENCY at a time
     S-->>API: report (pages, 304s, totals, quota left)
-    API-->>UI: 200, or 429 + Retry-After
+    API-->>UI: 200, or 429 + Retry-After when the<br/>repository listing itself was throttled
 ```
 
 The mechanisms live in `services/sync.service.ts`, `providers/github/githubClient.ts` and `lib/`:
@@ -93,8 +105,13 @@ The mechanisms live in `services/sync.service.ts`, `providers/github/githubClien
 - **Per-resource watermarks.** Every resource in every repository keeps its own
   `lastSyncedAt` in `syncState`, replayed as `since`. A failed or rate-limited run does
   *not* advance its watermark, or the records it never fetched would be skipped forever.
-  `/pulls` accepts no `since`, so there the provider sorts by `updated` descending and
-  applies the watermark client-side.
+  `/pulls` accepts no `since`, so there the provider sorts by `updated` descending, applies
+  the watermark client-side, and stops paging at the first page that reaches back past it.
+- **Resumable walks.** A listing cut short by `SYNC_MAX_PAGES` or the quota floor is
+  recorded as `partial`. It keeps its old watermark and ETag and stores the `rel="next"`
+  cursor it stopped at, and the next run carries on from there. Only when the listing has
+  been walked to its end does the watermark move, to the start of the first run in that
+  chain.
 - **Cursor pagination.** Pages are walked by following `Link: rel="next"`. Computed page
   numbers drift when records are inserted mid-walk; the header does not.
 - **A quota floor.** Pagination stops once `X-RateLimit-Remaining` falls to
@@ -108,8 +125,8 @@ The mechanisms live in `services/sync.service.ts`, `providers/github/githubClien
 
 One failure does not sink the run: a resource that errors records its status and message on
 its own `syncState` row, and the walk continues. `GET /api/sync/state` returns those rows —
-watermark, last status, and *whether* an ETag is held, never its value — which is what makes
-the pipeline debuggable rather than a black box.
+watermark, last status, *whether* an ETag is held (never its value) and whether a resume is
+pending. That is what makes the pipeline debuggable rather than a black box.
 
 ## What lands in Mongo
 
@@ -156,6 +173,7 @@ erDiagram
         string scopeId "repository id, or '' for the account-wide listing"
         string etag "the If-None-Match validator"
         date lastSyncedAt "the since watermark"
+        string resumeCursor "where a cut-short walk resumes"
     }
 ```
 
@@ -168,17 +186,30 @@ repository" is one `$lookup` instead of five follow-up counts.
 
 ## The screens
 
-![Overview dashboard: counts, a 30-day commit activity chart, language breakdown, most starred repositories, and the sync pipeline state table](docs/screenshots/dashboard.png)
+![Overview: counts, a 30-day commit activity chart, languages, the most starred repositories and the sync pipeline state](docs/screenshots/desktop-dashboard.png)
 
-*Overview. The bottom panel is the pipeline's own state: 19 tracked scopes, all holding a stored ETag, none failing.*
+*Overview, right after a sync. The banner is the run report; the bottom panel is the
+pipeline's own state: 19 tracked listings, all holding a stored ETag, none failing.*
 
-![Repository list with search, language filter and sort, and an open activity summary panel](docs/screenshots/repositories.png)
+![Repository list with search, language filter and sort, and an open activity summary panel](docs/screenshots/desktop-repositories.png)
 
-*Repositories — server-side search, filter, sort and paging. The summary panel's badge names its source: here **Computed locally**, because this deployment has no API key.*
+*Repositories: server-side search, filter, sort and paging. The language list covers the
+whole account. The summary panel's badge names its source, here **Computed locally**,
+because this deployment has no API key.*
 
-![Stale pull requests grouped into abandoned and stale, each row showing days untouched](docs/screenshots/pull-requests.png)
+![Stale pull requests grouped into abandoned, stale and watch, each row showing days untouched](docs/screenshots/desktop-pull-requests.png)
 
-*Stale pull requests, graded off `STALE_PR_DAYS`: watch at 1×, stale at 2×, abandoned at 4×. A rule, not a model — so the list can be acted on without trusting one.*
+*Stale pull requests, graded off `STALE_PR_DAYS`: watch at 1×, stale at 2×, abandoned at 4×.
+It is a rule, not a model, so the list can be acted on without trusting one.*
+
+<p>
+  <img src="docs/screenshots/mobile-dashboard.png" width="260" alt="Overview on a phone: the navigation scrolls sideways under the brand and the tiles sit two to a row">
+  <img src="docs/screenshots/mobile-repositories.png" width="260" alt="Repositories on a phone: filters stacked, secondary columns hidden">
+  <img src="docs/screenshots/mobile-connection.png" width="260" alt="Connection page on a phone showing the connected demo account">
+</p>
+
+All data on these screens is the fabricated demo account (`fernhollow-demo`, authors ending
+in `-demo`) synced from the bundled mock.
 
 ## Running it
 
@@ -187,7 +218,7 @@ docker compose up --build
 ```
 
 That starts MongoDB, seeds a fabricated demo account, runs the API and the web app, and
-serves a stand-in for `api.github.com` so the pipeline has something real to sync from with
+serves a stand-in for `api.github.com`, so the pipeline has something real to sync from with
 no GitHub account and no credentials.
 
 | Service | URL |
@@ -198,40 +229,49 @@ no GitHub account and no credentials.
 
 Open <http://localhost:8230>, go to **Connection**, choose **Open the demo account**, then
 press **Sync now**. `GET /health` reports liveness, whether Mongo is actually reachable,
-which providers hold credentials, and whether AI is enabled. Tear down with
-`docker compose down -v`.
+which providers hold credentials, and whether AI is enabled:
 
-**Docker verification status.** `docker compose build` and `docker compose up -d` were both run
-successfully during the build session: all four images built, all four services reached `healthy`,
-and the stack was exercised through the published ports — `/health`, the demo session, the
-overview, the 19-page first sync and the 19 × `304` second, the insights endpoints. Two config
-edits landed *after* that boot and were not re-run in a container: the `absolute_redirect off;
-port_in_redirect off;` fix in `frontend/nginx.conf` (nginx otherwise 301s `/dashboard` to its
-internal port 8080, unreachable from the host), and richer mock repository descriptions.
+```console
+$ curl -s http://localhost:8231/health
+{"status":"ok","database":"connected","providers":[{"id":"github","configured":false}],"ai":"heuristics-only"}
+```
+
+Tear down with `docker compose down -v`.
 
 ### Without Docker
 
-```bash
-cd backend && npm install
-npm run dev            # ts-node + nodemon, needs a MongoDB on DB_URL
-npm run seed           # writes the fabricated demo account
-npm run mock-github    # the api.github.com stand-in, on :4100
-npm test               # vitest — 221 tests; also npm run lint, npm run format:check
+Both halves pin Node 22 (`.nvmrc`, `engines`).
 
-cd frontend && npm install
-npm start              # ng serve on :4200, proxying /api to :3000
-npm test               # karma + headless Chrome — 31 specs
+```bash
+cd backend
+cp .env.example .env    # then set DB_URL to a running MongoDB
+npm ci
+npm run seed            # writes the fabricated demo account
+npm run mock-github     # the api.github.com stand-in, on :4100
+npm run dev             # ts-node + nodemon on :3000
+npm test                # Vitest, 234 tests
+npm run lint && npm run format:check
+
+cd ../frontend
+npm ci
+npm start               # ng serve on :4200, proxying /api to :3000
+npm test                # Karma + headless Chrome, 39 specs (set CHROME_BIN if needed)
+npm run lint && npm run format:check
 npm run build
 ```
 
-252 tests, none of which touches the network or a database: every GitHub call is mocked at
-the axios module boundary, models are in-memory doubles, and the suite runs with
-`ANTHROPIC_API_KEY` deleted so no test can make a paid call.
+To run the demo this way, set `GITHUB_API_BASE_URL=http://localhost:4100` and
+`DEMO_MODE=true` in `backend/.env`.
 
-To connect a real account: create an OAuth app with callback URL
-`http://localhost:8231/api/github/callback`, set `GITHUB_CLIENT_ID` and
-`GITHUB_CLIENT_SECRET` and `GITHUB_REDIRECT_URI` on the `api` service, drop the
-`GITHUB_API_BASE_URL` override so it talks to `api.github.com`, and turn `DEMO_MODE` off.
+None of the tests touch the network or a database. Every GitHub call is mocked at the axios
+module boundary, the models are in-memory doubles (plus one test that runs the real
+`SyncState` schema through `validateSync()`), and the suite runs with `ANTHROPIC_API_KEY`
+deleted so no test can make a paid call.
+
+To connect a real account, create an OAuth app with the callback URL
+`http://localhost:8231/api/github/callback`. On the `api` service, set `GITHUB_CLIENT_ID`,
+`GITHUB_CLIENT_SECRET` and `GITHUB_REDIRECT_URI`, drop the `GITHUB_API_BASE_URL` override so
+it talks to `api.github.com`, and turn `DEMO_MODE` off.
 
 ## Configuration
 
@@ -248,6 +288,7 @@ placeholder values throughout.
 | `GITHUB_CLIENT_ID` / `_SECRET` | no | *(empty)* | OAuth app credentials. Without them the connect flow answers 503; everything else still runs. |
 | `GITHUB_API_BASE_URL` | no | `https://api.github.com` | REST API root. Point it at the mock to run offline. |
 | `SYNC_CONCURRENCY` | no | `4` | Repositories whose children sync in parallel. |
+| `SYNC_MAX_PAGES` | no | `20` | Pages walked per listing per run; a longer listing resumes on the next run. |
 | `SYNC_RATE_LIMIT_FLOOR` | no | `50` | Stop paginating at this much remaining quota. |
 | `API_MAX_PAGE_SIZE` | no | `100` | Server-side cap on `?limit=`. |
 | `STALE_PR_DAYS` | no | `14` | Inactivity before an open pull request is reported stale. |
@@ -257,26 +298,31 @@ placeholder values throughout.
 The frontend needs no environment variables: it calls `/api` on its own origin, proxied by
 `ng serve` in development and by nginx in the container.
 
-## Two things that were wrong
+## Bugs that left evidence
 
-Both are fixed, and both left evidence in the tree rather than only in a commit message.
+Each of these was fixed with a test that fails on the old code.
 
-**`SyncState.scopeId` was `{ required: true, default: '' }`.** Mongoose's `required`
-validator rejects the empty string — and the empty string is exactly the scope the
-account-wide repository listing uses, so every repository sync failed validation before it
-could persist its resume point. The existing tests mock the models, so they could not see
-it. `backend/test/models/syncState.model.test.ts` now runs the real schema through
-`validateSync()` (no connection needed) and pins the empty scope as valid.
-
-**There was no OAuth `state` parameter** — the CSRF hole that lets an attacker bind a
-victim's session to their own GitHub account. `src/helpers/oauthState.ts` now issues an
-unguessable single-use value per authorisation attempt and consumes it in the callback; an
-unknown, expired or replayed value is a `400` and the code is never exchanged. The store is
-in-memory and short-lived by design — a multi-instance deployment needs a shared one.
+- **`SyncState.scopeId` was `{ required: true, default: '' }`.** Mongoose's `required`
+  validator rejects the empty string, and the empty string is exactly the scope the
+  account-wide repository listing uses. Every repository sync failed validation before it
+  could store its resume point. `test/models/syncState.model.test.ts` runs the real schema.
+- **There was no OAuth `state` parameter.** That is the CSRF hole that lets an attacker bind
+  a victim's session to their own GitHub account. `src/helpers/oauthState.ts` issues an
+  unguessable, single-use value per attempt and consumes it in the callback. An unknown,
+  expired or replayed value is a `400`, and the code is never exchanged. The store is
+  in-memory by design; a multi-instance deployment needs a shared one.
+- **The token came back in the query string.** The callback now hands it to the SPA in the
+  URL fragment (`/connection#token=…`), which browsers never send to a server, so it stays
+  out of access logs and `Referer` headers.
+- **A walk cut short by the page cap still advanced its watermark**, so the pages it never
+  reached fell outside the next run's `since` for good. Walks are now resumable (above).
+- **The language filter only offered languages from the current page.** Picking one hid the
+  rest. `GET /api/catalog/languages` now serves the whole account's list.
 
 Nearby: the logger redacts any context key matching `token`, `secret`, `password`,
 `authorization` or `api key`; unexpected errors are logged in full and answered with a bare
-`500`; and every credential in `backend/.env.example` is an obvious placeholder.
+`500`; a `401` for a stored token signs the SPA out; and every credential in
+`backend/.env.example` is an obvious placeholder.
 
 ## The one seam
 
@@ -286,7 +332,7 @@ URL, token exchange, account identity, revocation, and the four paginated listin
 provider-neutral record types — so nothing above it ever sees a GitHub payload shape.
 
 It is verifiably real rather than aspirational: `SyncService` is constructed with a
-`SourceProvider`, imports nothing from `providers/github`, and its 21 tests drive it with a
+`SourceProvider`, imports nothing from `providers/github`, and its 27 tests drive it with a
 hand-written fake. Adding GitLab is one class plus one line in `src/providers/index.ts`.
 
 ## AI, where it earns its place
@@ -310,7 +356,8 @@ a model: "open and untouched for N days" is explainable, free, and works with no
 - **No GraphQL.** Everything uses REST; GraphQL would fetch some of these shapes in far
   fewer calls.
 - **Sessions are bare bearer tokens.** The GitHub access token *is* the API credential: no
-  separate session layer, no refresh, no expiry handling, stored unencrypted at rest.
+  separate session layer, no refresh, no expiry handling, stored unencrypted at rest and in
+  the browser's `localStorage`.
 - **One integration per user per provider.** The schema does not model an organisation with
   several linked accounts.
 - **Offset paging on reads.** `page`/`limit` with `skip` is fine at these sizes but degrades
@@ -318,3 +365,7 @@ a model: "open and untouched for N days" is explainable, free, and works with no
 - **Only GitHub is implemented.** The provider seam exists and is tested; GitLab and
   Bitbucket providers are not written.
 - **The insight cache is in-process.** It does not survive a restart or reach other instances.
+
+## Licence
+
+MIT. See [LICENSE](LICENSE).
