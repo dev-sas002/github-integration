@@ -42,7 +42,8 @@ import { Component, Input } from '@angular/core';
       }
 
       .value {
-        font-size: 28px;
+        font-family: var(--font-display);
+        font-size: 30px;
         font-weight: 600;
         letter-spacing: -0.02em;
         line-height: 1.2;
@@ -51,6 +52,10 @@ import { Component, Input } from '@angular/core';
       .note {
         font-size: 12px;
         color: var(--text-secondary);
+      }
+
+      .tile.accent {
+        border-top: 3px solid var(--highlight);
       }
 
       .tile.accent .value {

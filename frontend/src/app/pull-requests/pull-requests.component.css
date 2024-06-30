@@ -114,3 +114,17 @@
 .age .muted {
   font-size: 12px;
 }
+
+@media (max-width: 640px) {
+  .list li {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .age {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+  }
+}

@@ -77,6 +77,25 @@ export class DashboardComponent implements OnInit {
     })),
   );
 
+  /** The last run's report as one sentence. */
+  protected readonly reportLine = computed(() => {
+    const report = this.lastReport();
+    if (!report) {
+      return null;
+    }
+
+    const parts = [
+      `${report.mode === 'full' ? 'Full' : 'Incremental'} sync finished in ${report.durationMs.toLocaleString()} ms`,
+      `${report.pagesFetched} pages fetched`,
+      `${report.conditionalHits} listings unchanged (304, no quota spent)`,
+    ];
+    const quota = report.rateLimit;
+    if (quota?.remaining !== null && quota?.remaining !== undefined) {
+      parts.push(`${quota.remaining} of ${quota.limit} API calls left this hour`);
+    }
+    return `${parts.join(' · ')}.`;
+  });
+
   protected readonly commitsInWindow = computed(() =>
     this.activity().reduce((total, point) => total + point.commits, 0),
   );

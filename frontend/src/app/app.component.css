@@ -1,62 +1,145 @@
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: -48px;
+  z-index: 20;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  color: var(--text-primary);
+}
+
+.skip-link:focus {
+  top: 10px;
+}
+
 .topbar {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: var(--surface-card);
-  border-bottom: 1px solid var(--border);
+  background: var(--surface-ink);
+  color: var(--text-on-ink);
+  border-bottom: 3px solid var(--highlight);
 }
 
 .topbar-inner {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas: 'brand nav account';
   align-items: center;
-  gap: 32px;
+  column-gap: 32px;
   max-width: 1280px;
   margin: 0 auto;
   padding: 0 32px;
-  height: 56px;
+  min-height: 58px;
 }
 
 .brand {
+  grid-area: brand;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  color: var(--text-primary);
+  gap: 10px;
+  color: var(--text-on-ink);
+  font-family: var(--font-display);
+  font-size: 17px;
   font-weight: 600;
   letter-spacing: -0.01em;
-}
-
-.brand:hover {
   text-decoration: none;
 }
 
-.brand .icon {
-  color: var(--series-1);
+.mark {
+  width: 22px;
+  height: 22px;
+  fill: var(--highlight);
+  stroke: var(--text-on-ink);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+.mark path {
+  fill: none;
 }
 
 nav {
+  grid-area: nav;
   display: flex;
   gap: 4px;
-  flex: 1;
 }
 
 nav a {
-  padding: 6px 10px;
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  font-weight: 500;
+  padding: 17px 10px 15px;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -3px;
+  color: color-mix(in srgb, var(--text-on-ink) 82%, transparent);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
 }
 
 nav a:hover {
-  background: var(--surface-sunken);
-  color: var(--text-primary);
-  text-decoration: none;
+  color: var(--text-on-ink);
 }
 
 nav a.active {
-  background: var(--surface-sunken);
-  color: var(--text-primary);
+  color: var(--text-on-ink);
+  border-bottom-color: #e7a47f;
 }
 
-.account .icon {
-  font-size: 15px;
+nav a:focus-visible,
+.brand:focus-visible {
+  outline-color: #e7a47f;
+  outline-offset: -2px;
+}
+
+.account {
+  grid-area: account;
+}
+
+.account .chip {
+  background: color-mix(in srgb, var(--text-on-ink) 12%, transparent);
+  color: var(--text-on-ink);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #7fd18b;
+}
+
+main:focus {
+  outline: none;
+}
+
+@media (max-width: 760px) {
+  .topbar-inner {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'brand account'
+      'nav nav';
+    padding: 0 16px;
+    row-gap: 2px;
+  }
+
+  .brand {
+    padding-top: 12px;
+  }
+
+  .account {
+    padding-top: 12px;
+  }
+
+  nav {
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: 0 -16px;
+    padding: 0 6px;
+  }
+
+  nav a {
+    padding: 10px 8px 9px;
+    font-size: 14px;
+  }
 }

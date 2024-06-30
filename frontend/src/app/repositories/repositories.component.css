@@ -58,9 +58,21 @@ tr.row.selected td {
   background: color-mix(in srgb, var(--series-1) 7%, var(--surface-card));
 }
 
-.name {
+button.name {
   display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 13px;
   font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.name:hover {
+  text-decoration: underline;
 }
 
 .description {
@@ -173,8 +185,8 @@ tr.row.selected td {
 }
 
 .source-chip.model {
-  background: color-mix(in srgb, var(--series-1) 12%, var(--surface-card));
-  color: #1c5cab;
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-card));
+  color: var(--accent-strong);
 }
 
 .facts {
@@ -210,4 +222,45 @@ tr.row.selected td {
 
 .contributors li:last-child {
   border-bottom: none;
+}
+
+@media (max-width: 640px) {
+  .filters {
+    padding: 14px 16px;
+  }
+
+  .field input,
+  .field select {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .filters .field {
+    flex: 1 1 140px;
+  }
+
+  /* Language, stars and name stay; the rest is in the summary panel. */
+  table.data th:nth-child(4),
+  table.data td:nth-child(4),
+  table.data th:nth-child(5),
+  table.data td:nth-child(5) {
+    display: none;
+  }
+
+  table.data th:first-child,
+  table.data td:first-child {
+    padding-left: 16px;
+  }
+
+  .description {
+    max-width: none;
+  }
+
+  .pager {
+    padding: 12px 16px;
+  }
+
+  .panel {
+    position: static;
+  }
 }

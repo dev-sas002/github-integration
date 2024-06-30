@@ -41,19 +41,10 @@
     </div>
   }
 
-  @if (lastReport(); as report) {
-    <div class="notice">
+  @if (reportLine(); as line) {
+    <div class="notice" role="status">
       <span class="icon" aria-hidden="true">check_circle_outline</span>
-      <span>
-        {{ report.mode === 'full' ? 'Full' : 'Incremental' }} sync finished in
-        {{ report.durationMs | number }} ms · {{ report.pagesFetched }} pages fetched ·
-        {{ report.conditionalHits }} listings unchanged (304, no quota spent)
-        @if (report.rateLimit?.remaining !== null && report.rateLimit?.remaining !== undefined) {
-          · {{ report.rateLimit?.remaining }} of {{ report.rateLimit?.limit }} API calls left this
-          hour
-        }
-        .
-      </span>
+      <span>{{ line }}</span>
     </div>
   }
 
@@ -107,7 +98,7 @@
           <a class="hint" routerLink="/repositories">View all</a>
         </div>
         <div class="card-body">
-          <table class="data">
+          <table class="data top-repos">
             <thead>
               <tr>
                 <th>Repository</th>
@@ -119,7 +110,7 @@
             <tbody>
               @for (repo of data.topRepositories; track repo.fullName) {
                 <tr>
-                  <td>{{ repo.fullName }}</td>
+                  <td class="repo">{{ repo.fullName }}</td>
                   <td class="secondary">{{ repo.language ?? '—' }}</td>
                   <td class="num">{{ repo.stars | number }}</td>
                   <td class="num">{{ repo.commits | number }}</td>

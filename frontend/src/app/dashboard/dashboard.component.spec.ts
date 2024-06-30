@@ -135,4 +135,24 @@ describe('DashboardComponent', () => {
     expect(api.getOverview).toHaveBeenCalled();
     expect(component.lastReport()).toBeTruthy();
   });
+
+  it('sums up the last run in one sentence, with the quota when it is known', () => {
+    build(true);
+    api.runSync.and.returnValue(
+      of({
+        mode: 'incremental',
+        durationMs: 37,
+        pagesFetched: 0,
+        conditionalHits: 19,
+        rateLimit: { limit: 5000, remaining: 4899, resetAt: null },
+      }) as never,
+    );
+
+    component.sync();
+
+    expect(component.reportLine()).toBe(
+      'Incremental sync finished in 37 ms · 0 pages fetched · 19 listings unchanged ' +
+        '(304, no quota spent) · 4899 of 5000 API calls left this hour.',
+    );
+  });
 });
