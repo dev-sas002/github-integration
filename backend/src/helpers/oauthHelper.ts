@@ -32,6 +32,7 @@ export const getGitHubOAuthToken = async (code: string, redirectUri: string): Pr
     // distinguish OAuth failures from generic server issues.
     throw new Error(
       `Failed to exchange GitHub OAuth code for access token: ${(error as Error).message}`,
+      { cause: error },
     );
   }
 

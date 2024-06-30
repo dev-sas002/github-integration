@@ -309,7 +309,7 @@ export class SyncService {
 
     // --- 1. Repositories: the account-wide listing -------------------------
     const repoState = await this.loadState(userId, 'repositories', '');
-    let repositories: RepositoryRecord[] = [];
+    let repositories: RepositoryRecord[];
 
     try {
       const resumeCursor = full ? null : repoState.resumeCursor;
