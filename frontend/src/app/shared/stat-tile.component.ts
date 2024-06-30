@@ -1,4 +1,4 @@
-import { NgIf } from '@angular/common';
+
 import { Component, Input } from '@angular/core';
 
 /**
@@ -8,18 +8,19 @@ import { Component, Input } from '@angular/core';
  * would say the same thing with more ink.
  */
 @Component({
-  selector: 'app-stat-tile',
-  standalone: true,
-  imports: [NgIf],
-  template: `
+    selector: 'app-stat-tile',
+    imports: [],
+    template: `
     <div class="tile" [class.accent]="accent">
       <span class="label">{{ label }}</span>
       <span class="value">{{ display }}</span>
-      <span class="note" *ngIf="note">{{ note }}</span>
+      @if (note) {
+        <span class="note">{{ note }}</span>
+      }
     </div>
-  `,
-  styles: [
-    `
+    `,
+    styles: [
+        `
       .tile {
         display: flex;
         flex-direction: column;
@@ -57,7 +58,7 @@ import { Component, Input } from '@angular/core';
         color: var(--status-critical);
       }
     `,
-  ],
+    ]
 })
 export class StatTileComponent {
   @Input({ required: true }) label = '';

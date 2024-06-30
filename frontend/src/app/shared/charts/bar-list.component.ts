@@ -1,4 +1,4 @@
-import { NgFor, NgIf } from '@angular/common';
+
 import { Component, Input, computed, signal } from '@angular/core';
 
 export interface BarItem {
@@ -15,26 +15,28 @@ export interface BarItem {
  * at the tip, which is why there are no gridlines.
  */
 @Component({
-  selector: 'app-bar-list',
-  standalone: true,
-  imports: [NgFor, NgIf],
-  template: `
-    <ul class="bars" *ngIf="rows().length; else empty">
-      <li *ngFor="let row of rows()">
-        <span class="label" [title]="row.label">{{ row.label }}</span>
-        <span class="track">
-          <span class="fill" [style.width.%]="row.percent"></span>
-        </span>
-        <span class="value">{{ row.value }}</span>
-      </li>
-    </ul>
-
-    <ng-template #empty>
+    selector: 'app-bar-list',
+    imports: [],
+    template: `
+    @if (rows().length) {
+      <ul class="bars">
+        @for (row of rows(); track row.label) {
+          <li>
+            <span class="label" [title]="row.label">{{ row.label }}</span>
+            <span class="track">
+              <span class="fill" [style.width.%]="row.percent"></span>
+            </span>
+            <span class="value">{{ row.value }}</span>
+          </li>
+        }
+      </ul>
+    } @else {
       <p class="empty">Nothing to show yet.</p>
-    </ng-template>
-  `,
-  styles: [
-    `
+    }
+    
+    `,
+    styles: [
+        `
       .bars {
         display: grid;
         gap: 10px;
@@ -79,7 +81,7 @@ export interface BarItem {
         color: var(--text-primary);
       }
     `,
-  ],
+    ]
 })
 export class BarListComponent {
   private readonly data = signal<BarItem[]>([]);

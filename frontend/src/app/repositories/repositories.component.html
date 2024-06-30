@@ -6,15 +6,19 @@
     </div>
   </div>
 
-  <div class="notice" *ngIf="!session.isConnected()">
-    <span class="icon" aria-hidden="true">link_off</span>
-    <span>No account is connected. <a routerLink="/connection">Connect one</a> to see repositories here.</span>
-  </div>
+  @if (!session.isConnected()) {
+    <div class="notice">
+      <span class="icon" aria-hidden="true">link_off</span>
+      <span>No account is connected. <a routerLink="/connection">Connect one</a> to see repositories here.</span>
+    </div>
+  }
 
-  <div class="notice error" *ngIf="error()">
-    <span class="icon" aria-hidden="true">error_outline</span>
-    <span>{{ error() }}</span>
-  </div>
+  @if (error()) {
+    <div class="notice error">
+      <span class="icon" aria-hidden="true">error_outline</span>
+      <span>{{ error() }}</span>
+    </div>
+  }
 
   <div class="layout" [class.with-panel]="selected()">
     <section class="card">
@@ -27,14 +31,16 @@
             placeholder="owner/name"
             [value]="query"
             (input)="onSearch($any($event.target).value)"
-          />
+            />
         </div>
 
         <div class="field">
           <label for="repo-language">Language</label>
           <select id="repo-language" [(ngModel)]="language" (ngModelChange)="load(1)">
             <option value="">All languages</option>
-            <option *ngFor="let name of languages()" [value]="name">{{ name }}</option>
+            @for (name of languages(); track name) {
+              <option [value]="name">{{ name }}</option>
+            }
           </select>
         </div>
 
@@ -48,137 +54,155 @@
         </div>
       </div>
 
-      <table class="data" *ngIf="page() as result">
-        <thead>
-          <tr>
-            <th>Repository</th>
-            <th>Language</th>
-            <th class="num">Stars</th>
-            <th class="num">Open issues</th>
-            <th>Last push</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            *ngFor="let repo of result.items"
-            class="row"
-            [class.selected]="selected()?.externalId === repo.externalId"
-            (click)="select(repo)"
-          >
-            <td>
-              <button
-                type="button"
-                class="name"
-                [attr.aria-expanded]="selected()?.externalId === repo.externalId"
-                aria-controls="repo-summary"
-                (click)="$event.stopPropagation(); select(repo)"
-              >
-                {{ repo.fullName }}
-              </button>
-              <span class="description" *ngIf="repo.description">{{ repo.description }}</span>
-              <span class="topics" *ngIf="repo.topics?.length">
-                <span class="chip" *ngFor="let topic of repo.topics">{{ topic }}</span>
-              </span>
-            </td>
-            <td class="secondary">{{ repo.language ?? '—' }}</td>
-            <td class="num">{{ repo.stars | number }}</td>
-            <td class="num">{{ repo.openIssues | number }}</td>
-            <td class="secondary">{{ repo.pushedAt ? (repo.pushedAt | date: 'd MMM y') : '—' }}</td>
-          </tr>
-        </tbody>
-      </table>
+      @if (page(); as result) {
+        <table class="data">
+          <thead>
+            <tr>
+              <th>Repository</th>
+              <th>Language</th>
+              <th class="num">Stars</th>
+              <th class="num">Open issues</th>
+              <th>Last push</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (repo of result.items; track repo.externalId) {
+              <tr
+                class="row"
+                [class.selected]="selected()?.externalId === repo.externalId"
+                (click)="select(repo)"
+                >
+                <td>
+                  <button
+                    type="button"
+                    class="name"
+                    [attr.aria-expanded]="selected()?.externalId === repo.externalId"
+                    aria-controls="repo-summary"
+                    (click)="$event.stopPropagation(); select(repo)"
+                    >
+                    {{ repo.fullName }}
+                  </button>
+                  @if (repo.description) {
+                    <span class="description">{{ repo.description }}</span>
+                  }
+                  @if (repo.topics.length) {
+                    <span class="topics">
+                      @for (topic of repo.topics; track topic) {
+                        <span class="chip">{{ topic }}</span>
+                      }
+                    </span>
+                  }
+                </td>
+                <td class="secondary">{{ repo.language ?? '—' }}</td>
+                <td class="num">{{ repo.stars | number }}</td>
+                <td class="num">{{ repo.openIssues | number }}</td>
+                <td class="secondary">{{ repo.pushedAt ? (repo.pushedAt | date: 'd MMM y') : '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
 
-      <p class="empty" role="status" *ngIf="loading() && !page()">Loading repositories…</p>
+      @if (loading() && !page()) {
+        <p class="empty" role="status">Loading repositories…</p>
+      }
 
-      <p class="empty" *ngIf="page() && page()!.items.length === 0 && !loading()">
-        No repositories match those filters.
-      </p>
+      @if (page() && page()!.items.length === 0 && !loading()) {
+        <p class="empty">
+          No repositories match those filters.
+        </p>
+      }
 
-      <div class="pager" *ngIf="page() as result">
-        <span class="muted">{{ rangeLabel() }}</span>
-        <div class="pager-buttons">
-          <button class="btn" (click)="load(result.page - 1)" [disabled]="result.page <= 1 || loading()">
-            Previous
-          </button>
-          <button class="btn" (click)="load(result.page + 1)" [disabled]="!result.hasNext || loading()">
-            Next
-          </button>
+      @if (page(); as result) {
+        <div class="pager">
+          <span class="muted">{{ rangeLabel() }}</span>
+          <div class="pager-buttons">
+            <button class="btn" (click)="load(result.page - 1)" [disabled]="result.page <= 1 || loading()">
+              Previous
+            </button>
+            <button class="btn" (click)="load(result.page + 1)" [disabled]="!result.hasNext || loading()">
+              Next
+            </button>
+          </div>
         </div>
-      </div>
+      }
     </section>
 
-    <aside class="card panel" id="repo-summary" *ngIf="selected() as repo" aria-live="polite">
-      <div class="panel-head">
-        <div>
-          <h2>{{ repo.fullName }}</h2>
-          <span class="muted">Activity summary</span>
+    @if (selected(); as repo) {
+      <aside class="card panel" id="repo-summary" aria-live="polite">
+        <div class="panel-head">
+          <div>
+            <h2>{{ repo.fullName }}</h2>
+            <span class="muted">Activity summary</span>
+          </div>
+          <button class="btn icon-only" (click)="close()" aria-label="Close summary">
+            <span class="icon" aria-hidden="true">close</span>
+          </button>
         </div>
-        <button class="btn icon-only" (click)="close()" aria-label="Close summary">
-          <span class="icon" aria-hidden="true">close</span>
-        </button>
-      </div>
-
-      <div class="panel-body">
-        <p class="empty" *ngIf="insightLoading()">Summarising…</p>
-
-        <ng-container *ngIf="insight() as summary">
-          <span class="source-chip" [class.model]="summary.source === 'model'">
-            <span class="icon" aria-hidden="true">{{
-              summary.source === 'model' ? 'auto_awesome' : 'functions'
-            }}</span>
-            {{ summary.source === 'model' ? 'Written by Claude' : 'Computed locally' }}
-          </span>
-
-          <h3>{{ summary.headline }}</h3>
-          <p class="secondary">{{ summary.summary }}</p>
-
-          <h4>Highlights</h4>
-          <ul>
-            <li *ngFor="let item of summary.highlights">{{ item }}</li>
-          </ul>
-
-          <h4>Risks</h4>
-          <ul>
-            <li *ngFor="let item of summary.risks">{{ item }}</li>
-          </ul>
-
-          <h4>Facts it was given</h4>
-          <dl class="facts">
-            <div>
-              <dt>Commits (30d)</dt>
-              <dd>{{ summary.facts.commitsLast30Days }}</dd>
-            </div>
-            <div>
-              <dt>Commits (90d)</dt>
-              <dd>{{ summary.facts.commitsLast90Days }}</dd>
-            </div>
-            <div>
-              <dt>Open issues</dt>
-              <dd>{{ summary.facts.openIssues }}</dd>
-            </div>
-            <div>
-              <dt>Closed issues</dt>
-              <dd>{{ summary.facts.closedIssues }}</dd>
-            </div>
-            <div>
-              <dt>Open PRs</dt>
-              <dd>{{ summary.facts.openPullRequests }}</dd>
-            </div>
-            <div>
-              <dt>Merged PRs</dt>
-              <dd>{{ summary.facts.mergedPullRequests }}</dd>
-            </div>
-          </dl>
-
-          <h4>Top contributors</h4>
-          <ul class="contributors">
-            <li *ngFor="let person of summary.facts.contributors">
-              <span>{{ person.login }}</span>
-              <span class="muted">{{ person.commits }} commits</span>
-            </li>
-          </ul>
-        </ng-container>
-      </div>
-    </aside>
+        <div class="panel-body">
+          @if (insightLoading()) {
+            <p class="empty">Summarising…</p>
+          }
+          @if (insight(); as summary) {
+            <span class="source-chip" [class.model]="summary.source === 'model'">
+              <span class="icon" aria-hidden="true">{{
+                summary.source === 'model' ? 'auto_awesome' : 'functions'
+              }}</span>
+              {{ summary.source === 'model' ? 'Written by Claude' : 'Computed locally' }}
+            </span>
+            <h3>{{ summary.headline }}</h3>
+            <p class="secondary">{{ summary.summary }}</p>
+            <h4>Highlights</h4>
+            <ul>
+              @for (item of summary.highlights; track $index) {
+                <li>{{ item }}</li>
+              }
+            </ul>
+            <h4>Risks</h4>
+            <ul>
+              @for (item of summary.risks; track $index) {
+                <li>{{ item }}</li>
+              }
+            </ul>
+            <h4>Facts it was given</h4>
+            <dl class="facts">
+              <div>
+                <dt>Commits (30d)</dt>
+                <dd>{{ summary.facts.commitsLast30Days }}</dd>
+              </div>
+              <div>
+                <dt>Commits (90d)</dt>
+                <dd>{{ summary.facts.commitsLast90Days }}</dd>
+              </div>
+              <div>
+                <dt>Open issues</dt>
+                <dd>{{ summary.facts.openIssues }}</dd>
+              </div>
+              <div>
+                <dt>Closed issues</dt>
+                <dd>{{ summary.facts.closedIssues }}</dd>
+              </div>
+              <div>
+                <dt>Open PRs</dt>
+                <dd>{{ summary.facts.openPullRequests }}</dd>
+              </div>
+              <div>
+                <dt>Merged PRs</dt>
+                <dd>{{ summary.facts.mergedPullRequests }}</dd>
+              </div>
+            </dl>
+            <h4>Top contributors</h4>
+            <ul class="contributors">
+              @for (person of summary.facts.contributors; track person.login) {
+                <li>
+                  <span>{{ person.login }}</span>
+                  <span class="muted">{{ person.commits }} commits</span>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      </aside>
+    }
   </div>
 </div>

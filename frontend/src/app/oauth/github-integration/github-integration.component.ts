@@ -1,4 +1,4 @@
-import { DatePipe, NgFor, NgIf } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ProviderSummary } from '../../core/api.types';
@@ -17,11 +17,10 @@ import { GithubAuthService } from '../github-auth.service';
  * a URL to a server.
  */
 @Component({
-  selector: 'app-github-integration',
-  standalone: true,
-  templateUrl: './github-integration.component.html',
-  styleUrls: ['./github-integration.component.css'],
-  imports: [NgIf, NgFor, DatePipe, RouterLink],
+    selector: 'app-github-integration',
+    templateUrl: './github-integration.component.html',
+    styleUrls: ['./github-integration.component.css'],
+    imports: [DatePipe, RouterLink]
 })
 export class GithubIntegrationComponent implements OnInit {
   private readonly api = inject(GithubApiService);

@@ -1,4 +1,4 @@
-import { DatePipe, DecimalPipe, NgFor, NgIf } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -16,11 +16,10 @@ import { SessionService } from '../core/session.service';
  * repositories.
  */
 @Component({
-  selector: 'app-repositories',
-  standalone: true,
-  templateUrl: './repositories.component.html',
-  styleUrls: ['./repositories.component.css'],
-  imports: [NgIf, NgFor, FormsModule, DatePipe, DecimalPipe, RouterLink],
+    selector: 'app-repositories',
+    templateUrl: './repositories.component.html',
+    styleUrls: ['./repositories.component.css'],
+    imports: [FormsModule, DatePipe, DecimalPipe, RouterLink]
 })
 export class RepositoriesComponent implements OnInit {
   private readonly api = inject(GithubApiService);

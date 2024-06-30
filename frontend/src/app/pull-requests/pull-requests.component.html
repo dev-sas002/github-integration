@@ -12,61 +12,78 @@
     </button>
   </div>
 
-  <div class="notice" *ngIf="!session.isConnected()">
-    <span class="icon" aria-hidden="true">link_off</span>
-    <span>No account is connected. <a routerLink="/connection">Connect one</a> to see pull requests here.</span>
-  </div>
-
-  <div class="notice error" *ngIf="error()">
-    <span class="icon" aria-hidden="true">error_outline</span>
-    <span>{{ error() }}</span>
-  </div>
-
-  <section class="card" *ngIf="items().length; else noStale">
-    <div class="card-head">
-      <h2>{{ items().length }} needing attention</h2>
-      <span class="hint">Longest untouched: {{ oldest() }} days</span>
+  @if (!session.isConnected()) {
+    <div class="notice">
+      <span class="icon" aria-hidden="true">link_off</span>
+      <span>No account is connected. <a routerLink="/connection">Connect one</a> to see pull requests here.</span>
     </div>
+  }
 
-    <div class="card-body groups">
-      <div class="group" *ngFor="let bucket of buckets()">
-        <h3 class="group-head" [attr.data-severity]="bucket.severity">
-          <span class="icon" aria-hidden="true">{{ bucket.icon }}</span>
-          {{ bucket.label }}
-          <span class="muted">{{ bucket.items.length }}</span>
-        </h3>
+  @if (error()) {
+    <div class="notice error">
+      <span class="icon" aria-hidden="true">error_outline</span>
+      <span>{{ error() }}</span>
+    </div>
+  }
 
-        <ul class="list">
-          <li *ngFor="let pr of bucket.items">
-            <div class="main">
-              <span class="title">
-                {{ pr.title }}
-                <span class="chip" *ngIf="pr.isDraft">Draft</span>
-              </span>
-              <span class="meta">
-                {{ pr.repositoryFullName }} · #{{ pr.number }}
-                <ng-container *ngIf="pr.authorLogin"> · {{ pr.authorLogin }}</ng-container>
-              </span>
-            </div>
-            <div class="age">
-              <span class="days" [attr.data-severity]="pr.severity">{{ pr.ageDays }} days</span>
-              <span class="muted" *ngIf="pr.updatedAt">
-                last touched {{ pr.updatedAt | date: 'd MMM y' }}
-              </span>
-            </div>
-          </li>
-        </ul>
+  @if (items().length) {
+    <section class="card">
+      <div class="card-head">
+        <h2>{{ items().length }} needing attention</h2>
+        <span class="hint">Longest untouched: {{ oldest() }} days</span>
       </div>
-    </div>
-  </section>
-
-  <ng-template #noStale>
-    <p class="empty" role="status" *ngIf="loading()">Loading pull requests…</p>
-    <section class="card" *ngIf="session.isConnected() && !loading() && !error()">
-      <p class="empty">
-        Nothing is stale — every open pull request has been touched in the last
-        {{ thresholdDays() }} days.
-      </p>
+      <div class="card-body groups">
+        @for (bucket of buckets(); track bucket.severity) {
+          <div class="group">
+            <h3 class="group-head" [attr.data-severity]="bucket.severity">
+              <span class="icon" aria-hidden="true">{{ bucket.icon }}</span>
+              {{ bucket.label }}
+              <span class="muted">{{ bucket.items.length }}</span>
+            </h3>
+            <ul class="list">
+              @for (pr of bucket.items; track pr.externalId) {
+                <li>
+                  <div class="main">
+                    <span class="title">
+                      {{ pr.title }}
+                      @if (pr.isDraft) {
+                        <span class="chip">Draft</span>
+                      }
+                    </span>
+                    <span class="meta">
+                      {{ pr.repositoryFullName }} · #{{ pr.number }}
+                      @if (pr.authorLogin) {
+                        · {{ pr.authorLogin }}
+                      }
+                    </span>
+                  </div>
+                  <div class="age">
+                    <span class="days" [attr.data-severity]="pr.severity">{{ pr.ageDays }} days</span>
+                    @if (pr.updatedAt) {
+                      <span class="muted">
+                        last touched {{ pr.updatedAt | date: 'd MMM y' }}
+                      </span>
+                    }
+                  </div>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+      </div>
     </section>
-  </ng-template>
+  } @else {
+    @if (loading()) {
+      <p class="empty" role="status">Loading pull requests…</p>
+    }
+    @if (session.isConnected() && !loading() && !error()) {
+      <section class="card">
+        <p class="empty">
+          Nothing is stale — every open pull request has been touched in the last
+          {{ thresholdDays() }} days.
+        </p>
+      </section>
+    }
+  }
+
 </div>

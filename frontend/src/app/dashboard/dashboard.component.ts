@@ -1,4 +1,4 @@
-import { DatePipe, DecimalPipe, NgFor, NgIf } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { GithubApiService } from '../core/github-api.service';
@@ -40,20 +40,17 @@ const RESOURCE_LABELS: Record<string, string> = {
  * on its last run.
  */
 @Component({
-  selector: 'app-dashboard',
-  standalone: true,
-  templateUrl: './dashboard.component.html',
-  styleUrls: ['./dashboard.component.css'],
-  imports: [
-    NgIf,
-    NgFor,
+    selector: 'app-dashboard',
+    templateUrl: './dashboard.component.html',
+    styleUrls: ['./dashboard.component.css'],
+    imports: [
     DatePipe,
     DecimalPipe,
     RouterLink,
     StatTileComponent,
     ColumnChartComponent,
-    BarListComponent,
-  ],
+    BarListComponent
+]
 })
 export class DashboardComponent implements OnInit {
   private readonly api = inject(GithubApiService);

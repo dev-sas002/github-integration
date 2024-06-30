@@ -1,4 +1,4 @@
-import { DatePipe, NgFor, NgIf } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { StalePullRequest, StaleSeverity } from '../core/api.types';
@@ -24,11 +24,10 @@ const SEVERITY: Record<StaleSeverity, { label: string; icon: string }> = {
  * to trust a model.
  */
 @Component({
-  selector: 'app-pull-requests',
-  standalone: true,
-  templateUrl: './pull-requests.component.html',
-  styleUrls: ['./pull-requests.component.css'],
-  imports: [NgIf, NgFor, DatePipe, RouterLink],
+    selector: 'app-pull-requests',
+    templateUrl: './pull-requests.component.html',
+    styleUrls: ['./pull-requests.component.css'],
+    imports: [DatePipe, RouterLink]
 })
 export class PullRequestsComponent implements OnInit {
   private readonly api = inject(GithubApiService);

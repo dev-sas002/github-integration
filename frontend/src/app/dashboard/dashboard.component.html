@@ -2,15 +2,16 @@
   <div class="page-head">
     <div>
       <h1>Overview</h1>
-      <p *ngIf="overview() as data; else subtitleFallback">
-        Synced from GitHub
-        <ng-container *ngIf="data.lastSyncedAt">
-          · last run {{ data.lastSyncedAt | date: 'd MMM y, HH:mm' }}
-        </ng-container>
-      </p>
-      <ng-template #subtitleFallback>
+      @if (overview(); as data) {
+        <p>
+          Synced from GitHub
+          @if (data.lastSyncedAt) {
+            · last run {{ data.lastSyncedAt | date: 'd MMM y, HH:mm' }}
+          }
+        </p>
+      } @else {
         <p>Repository, commit, issue and pull request data pulled by the sync pipeline.</p>
-      </ng-template>
+      }
     </div>
 
     <button class="btn btn-primary" (click)="sync()" [disabled]="syncing() || !session.isConnected()">
@@ -19,42 +20,47 @@
     </button>
   </div>
 
-  <div class="notice error" *ngIf="error()">
-    <span class="icon" aria-hidden="true">error_outline</span>
-    <span>{{ error() }}</span>
-  </div>
-
-  <div class="notice" *ngIf="!session.isConnected()">
-    <span class="icon" aria-hidden="true">link_off</span>
-    <span>No account is connected yet. <a routerLink="/connection">Connect one</a> to populate this dashboard.</span>
-  </div>
-
-  <div class="notice" *ngIf="lastReport() as report">
-    <span class="icon" aria-hidden="true">check_circle_outline</span>
-    <span>
-      {{ report.mode === 'full' ? 'Full' : 'Incremental' }} sync finished in
-      {{ report.durationMs | number }} ms · {{ report.pagesFetched }} pages fetched ·
-      {{ report.conditionalHits }} listings unchanged (304, no quota spent)<ng-container
-        *ngIf="report.rateLimit?.remaining !== null && report.rateLimit?.remaining !== undefined"
-      >
-        · {{ report.rateLimit?.remaining }} of {{ report.rateLimit?.limit }} API calls left this hour</ng-container
-      >.
-    </span>
-  </div>
-
-  <ng-container *ngIf="overview() as data">
-    <div class="notice" *ngIf="data.counts.repositories === 0 && !syncing()">
-      <span class="icon" aria-hidden="true">inbox</span>
-      <span>Nothing has been synced for this account yet. Press <strong>Sync now</strong> to run the pipeline.</span>
+  @if (error()) {
+    <div class="notice error">
+      <span class="icon" aria-hidden="true">error_outline</span>
+      <span>{{ error() }}</span>
     </div>
+  }
 
+  @if (!session.isConnected()) {
+    <div class="notice">
+      <span class="icon" aria-hidden="true">link_off</span>
+      <span>No account is connected yet. <a routerLink="/connection">Connect one</a> to populate this dashboard.</span>
+    </div>
+  }
+
+  @if (lastReport(); as report) {
+    <div class="notice">
+      <span class="icon" aria-hidden="true">check_circle_outline</span>
+      <span>
+        {{ report.mode === 'full' ? 'Full' : 'Incremental' }} sync finished in
+        {{ report.durationMs | number }} ms · {{ report.pagesFetched }} pages fetched ·
+        {{ report.conditionalHits }} listings unchanged (304, no quota spent)@if (report.rateLimit?.remaining !== null && report.rateLimit?.remaining !== undefined) {
+        · {{ report.rateLimit?.remaining }} of {{ report.rateLimit?.limit }} API calls left this hour
+        }.
+      </span>
+    </div>
+  }
+
+  @if (overview(); as data) {
+    @if (data.counts.repositories === 0 && !syncing()) {
+      <div class="notice">
+        <span class="icon" aria-hidden="true">inbox</span>
+        <span>Nothing has been synced for this account yet. Press <strong>Sync now</strong> to run the pipeline.</span>
+      </div>
+    }
     <section class="tiles">
       <app-stat-tile label="Repositories" [value]="data.counts.repositories" />
       <app-stat-tile
         label="Commits"
         [value]="data.counts.commits"
         [note]="commitsInWindow() + ' in the last ' + ACTIVITY_DAYS + ' days'"
-      />
+        />
       <app-stat-tile label="Open issues" [value]="data.counts.openIssues" />
       <app-stat-tile label="Open pull requests" [value]="data.counts.openPullRequests" />
       <app-stat-tile
@@ -62,9 +68,8 @@
         [value]="data.counts.stalePullRequests"
         [accent]="data.counts.stalePullRequests > 0"
         note="No activity past the threshold"
-      />
+        />
     </section>
-
     <section class="card">
       <div class="card-head">
         <h2>Commit activity, last {{ ACTIVITY_DAYS }} days</h2>
@@ -74,7 +79,6 @@
         <app-column-chart [points]="activity()" />
       </div>
     </section>
-
     <div class="two-up">
       <section class="card">
         <div class="card-head">
@@ -84,7 +88,6 @@
           <app-bar-list [items]="languages()" />
         </div>
       </section>
-
       <section class="card">
         <div class="card-head">
           <h2>Most starred repositories</h2>
@@ -101,45 +104,52 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let repo of data.topRepositories">
-                <td>{{ repo.fullName }}</td>
-                <td class="secondary">{{ repo.language ?? '—' }}</td>
-                <td class="num">{{ repo.stars | number }}</td>
-                <td class="num">{{ repo.commits | number }}</td>
-              </tr>
+              @for (repo of data.topRepositories; track repo.fullName) {
+                <tr>
+                  <td>{{ repo.fullName }}</td>
+                  <td class="secondary">{{ repo.language ?? '—' }}</td>
+                  <td class="num">{{ repo.stars | number }}</td>
+                  <td class="num">{{ repo.commits | number }}</td>
+                </tr>
+              }
             </tbody>
           </table>
         </div>
       </section>
     </div>
+    @if (pipeline().length) {
+      <section class="card">
+        <div class="card-head">
+          <h2>Sync pipeline state</h2>
+          <span class="hint">One row per resource; each tracks its own watermark and ETag</span>
+        </div>
+        <div class="card-body">
+          <table class="data">
+            <thead>
+              <tr>
+                <th>Resource</th>
+                <th class="num">Tracked scopes</th>
+                <th class="num">With stored ETag</th>
+                <th class="num">Failing</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of pipeline(); track row.resource) {
+                <tr>
+                  <td>{{ row.label }}</td>
+                  <td class="num">{{ row.rows }}</td>
+                  <td class="num">{{ row.cached }}</td>
+                  <td class="num" [class.bad]="row.failures > 0">{{ row.failures }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+  }
 
-    <section class="card" *ngIf="pipeline().length">
-      <div class="card-head">
-        <h2>Sync pipeline state</h2>
-        <span class="hint">One row per resource; each tracks its own watermark and ETag</span>
-      </div>
-      <div class="card-body">
-        <table class="data">
-          <thead>
-            <tr>
-              <th>Resource</th>
-              <th class="num">Tracked scopes</th>
-              <th class="num">With stored ETag</th>
-              <th class="num">Failing</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let row of pipeline()">
-              <td>{{ row.label }}</td>
-              <td class="num">{{ row.rows }}</td>
-              <td class="num">{{ row.cached }}</td>
-              <td class="num" [class.bad]="row.failures > 0">{{ row.failures }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-  </ng-container>
-
-  <p class="empty" role="status" *ngIf="loading() && !overview()">Loading the overview…</p>
+  @if (loading() && !overview()) {
+    <p class="empty" role="status">Loading the overview…</p>
+  }
 </div>

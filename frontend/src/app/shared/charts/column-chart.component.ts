@@ -1,4 +1,4 @@
-import { NgFor, NgIf } from '@angular/common';
+
 import { Component, Input, computed, signal } from '@angular/core';
 
 export interface ColumnPoint {
@@ -62,58 +62,68 @@ const niceCeiling = (value: number): number => {
  * every other value.
  */
 @Component({
-  selector: 'app-column-chart',
-  standalone: true,
-  imports: [NgFor, NgIf],
-  template: `
+    selector: 'app-column-chart',
+    imports: [],
+    template: `
     <div class="chart" (mouseleave)="hovered.set(null)">
       <svg
         [attr.viewBox]="'0 0 ' + VIEW_WIDTH + ' ' + VIEW_HEIGHT"
         role="img"
         [attr.aria-label]="ariaLabel()"
-      >
+        >
         <g class="grid">
-          <g *ngFor="let tick of ticks()">
-            <line [attr.x1]="PAD_LEFT" [attr.x2]="VIEW_WIDTH - PAD_RIGHT" [attr.y1]="tick.y" [attr.y2]="tick.y" />
-            <text [attr.x]="PAD_LEFT - 8" [attr.y]="tick.y + 4">{{ tick.label }}</text>
+          @for (tick of ticks(); track tick.y) {
+            <g>
+              <line [attr.x1]="PAD_LEFT" [attr.x2]="VIEW_WIDTH - PAD_RIGHT" [attr.y1]="tick.y" [attr.y2]="tick.y" />
+              <text [attr.x]="PAD_LEFT - 8" [attr.y]="tick.y + 4">{{ tick.label }}</text>
+            </g>
+          }
+        </g>
+    
+        <g>
+          @for (column of columns(); track column.date) {
+            <path class="bar" [attr.d]="column.path" />
+          }
+        </g>
+    
+        @if (peak(); as top) {
+          <g class="peak">
+            <text [attr.x]="top.centre" [attr.y]="top.y - 6">{{ top.commits }}</text>
           </g>
-        </g>
-
-        <g>
-          <path *ngFor="let column of columns()" class="bar" [attr.d]="column.path" />
-        </g>
-
-        <g class="peak" *ngIf="peak() as top">
-          <text [attr.x]="top.centre" [attr.y]="top.y - 6">{{ top.commits }}</text>
-        </g>
-
+        }
+    
         <g class="axis">
-          <text *ngFor="let column of axisLabels()" [attr.x]="column.centre" [attr.y]="VIEW_HEIGHT - 8">
-            {{ column.label }}
-          </text>
+          @for (column of axisLabels(); track column.date) {
+            <text [attr.x]="column.centre" [attr.y]="VIEW_HEIGHT - 8">
+              {{ column.label }}
+            </text>
+          }
         </g>
-
+    
         <g>
-          <rect
-            *ngFor="let column of columns(); let i = index"
-            class="hit"
-            [attr.x]="column.x - BAR_GAP"
-            [attr.y]="PAD_TOP"
-            [attr.width]="column.width + BAR_GAP * 2"
-            [attr.height]="VIEW_HEIGHT - PAD_TOP - PAD_BOTTOM"
-            (mouseenter)="hovered.set(i)"
-          />
+          @for (column of columns(); track column.date; let i = $index) {
+            <rect
+              class="hit"
+              [attr.x]="column.x - BAR_GAP"
+              [attr.y]="PAD_TOP"
+              [attr.width]="column.width + BAR_GAP * 2"
+              [attr.height]="VIEW_HEIGHT - PAD_TOP - PAD_BOTTOM"
+              (mouseenter)="hovered.set(i)"
+              />
+          }
         </g>
       </svg>
-
-      <div class="tooltip" *ngIf="hoveredColumn() as column" [style.left.%]="tooltipLeft()">
-        <strong>{{ column.commits }}</strong> commit{{ column.commits === 1 ? '' : 's' }}
-        <span class="muted">{{ column.label }}</span>
-      </div>
+    
+      @if (hoveredColumn(); as column) {
+        <div class="tooltip" [style.left.%]="tooltipLeft()">
+          <strong>{{ column.commits }}</strong> commit{{ column.commits === 1 ? '' : 's' }}
+          <span class="muted">{{ column.label }}</span>
+        </div>
+      }
     </div>
-  `,
-  styles: [
-    `
+    `,
+    styles: [
+        `
       .chart {
         position: relative;
       }
@@ -181,7 +191,7 @@ const niceCeiling = (value: number): number => {
         margin-left: 6px;
       }
     `,
-  ],
+    ]
 })
 export class ColumnChartComponent {
   protected readonly VIEW_WIDTH = VIEW_WIDTH;

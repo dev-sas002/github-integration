@@ -13,10 +13,13 @@
     </nav>
 
     <div class="account">
-      <span class="chip" *ngIf="session.isConnected(); else signedOut">
-        <span class="icon" aria-hidden="true">account_circle</span>{{ session.username() ?? 'Connected' }}
-      </span>
-      <ng-template #signedOut><span class="chip">Not connected</span></ng-template>
+      @if (session.isConnected()) {
+        <span class="chip">
+          <span class="icon" aria-hidden="true">account_circle</span>{{ session.username() ?? 'Connected' }}
+        </span>
+      } @else {
+        <span class="chip">Not connected</span>
+      }
     </div>
   </div>
 </header>
