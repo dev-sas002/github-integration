@@ -519,6 +519,17 @@ describe('SyncService.run — failure isolation', () => {
     expect(report.warnings[0]).toMatch(/nothing else was synced/);
   });
 
+  it('carries the upstream Retry-After on a throttled repository listing', async () => {
+    const provider = new FakeProvider({ repositories: [] });
+    vi.spyOn(provider, 'listRepositories').mockRejectedValue(
+      new ProviderError('limited', { status: 429, rateLimited: true, retryAfterSeconds: 30 }),
+    );
+
+    const report = await new SyncService(provider).run(USER, TOKEN);
+
+    expect(report.results[0]).toMatchObject({ status: 'rate_limited', retryAfterSeconds: 30 });
+  });
+
   it('reports no repositories as a warning, not an error', async () => {
     const provider = new FakeProvider({ repositories: [emptyPage({ items: [] })] });
 

@@ -42,6 +42,8 @@ export interface ResourceSyncResult {
    */
   status: SyncStatus;
   error?: string;
+  /** Upstream's `Retry-After` for a rate-limited resource, when it sent one. */
+  retryAfterSeconds?: number;
 }
 
 export interface SyncReport {
@@ -291,6 +293,7 @@ export class SyncService {
       notModified: false,
       status: limited ? 'rate_limited' : 'error',
       error: (error as Error).message,
+      ...(limited && error.retryAfterSeconds ? { retryAfterSeconds: error.retryAfterSeconds } : {}),
     };
   }
 

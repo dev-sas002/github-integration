@@ -21,7 +21,9 @@ const mocks = vi.hoisted(() => {
     getSyncState: vi.fn(async () => []),
   };
 
-  const sync = { runSync: vi.fn(async () => ({ provider: 'github', mode: 'incremental' })) };
+  const sync = {
+    runSync: vi.fn(async () => ({ provider: 'github', mode: 'incremental', results: [] })),
+  };
 
   const insights = {
     getStalePullRequests: vi.fn(async () => []),
@@ -59,7 +61,7 @@ let app: Express;
 beforeEach(() => {
   app = buildApp();
   mocks.UserModel.findOne.mockResolvedValue({ _id: 'user-1', username: 'octo' });
-  mocks.sync.runSync.mockResolvedValue({ provider: 'github', mode: 'incremental' });
+  mocks.sync.runSync.mockResolvedValue({ provider: 'github', mode: 'incremental', results: [] });
 });
 
 describe('authentication guard', () => {
@@ -172,6 +174,35 @@ describe('sync routes', () => {
 
     expect(response.status).toBe(429);
     expect(response.headers['retry-after']).toBe('42');
+  });
+
+  it('answers 429 with the report when the repository listing was throttled', async () => {
+    mocks.sync.runSync.mockResolvedValue({
+      provider: 'github',
+      mode: 'incremental',
+      results: [{ resource: 'repositories', status: 'rate_limited', retryAfterSeconds: 30 }],
+    } as any);
+
+    const response = await request(app).post('/api/sync').set('Authorization', TOKEN);
+
+    expect(response.status).toBe(429);
+    expect(response.headers['retry-after']).toBe('30');
+    expect(response.body.results[0].status).toBe('rate_limited');
+  });
+
+  it('stays 200 when only a child resource was throttled', async () => {
+    mocks.sync.runSync.mockResolvedValue({
+      provider: 'github',
+      mode: 'incremental',
+      results: [
+        { resource: 'repositories', status: 'ok' },
+        { resource: 'issues', status: 'rate_limited' },
+      ],
+    } as any);
+
+    const response = await request(app).post('/api/sync').set('Authorization', TOKEN);
+
+    expect(response.status).toBe(200);
   });
 
   it('answers 502 for a non rate-limit provider failure', async () => {
