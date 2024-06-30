@@ -123,6 +123,22 @@ export const listRepositories = (userId: Id, query: RepositoryQuery) => {
   );
 };
 
+/**
+ * Every language across the account's repositories, for the filter control.
+ * Taken from the whole collection rather than the current page, so choosing
+ * one language does not hide the others from the list.
+ */
+export const listRepositoryLanguages = async (userId: Id): Promise<string[]> => {
+  const languages: unknown[] = await RepositoryModel.distinct('language', {
+    userId,
+    language: { $ne: null },
+  });
+
+  return languages
+    .filter((language): language is string => typeof language === 'string' && language !== '')
+    .sort((a, b) => a.localeCompare(b));
+};
+
 export interface CommitQuery extends PageQuery {
   repositoryId?: string;
   author?: string;

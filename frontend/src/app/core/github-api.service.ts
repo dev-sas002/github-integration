@@ -62,6 +62,11 @@ export class GithubApiService {
     });
   }
 
+  /** Every language on the account, for the repository filter. */
+  listRepositoryLanguages(): Observable<{ languages: string[] }> {
+    return this.http.get<{ languages: string[] }>(`${this.base}/catalog/languages`);
+  }
+
   listCommits(
     filters: { page?: number; limit?: number; repositoryId?: string } = {},
   ): Observable<Paginated<Commit>> {

@@ -6,6 +6,7 @@ import {
   getIssues,
   getPullRequests,
   getRepositories,
+  getRepositoryLanguages,
 } from '../http/controllers/catalog.controller';
 import { authenticate } from '../http/middleware/authenticate';
 
@@ -15,6 +16,7 @@ router.use(authenticate());
 
 router.get('/overview', expressAsyncHandler(getDashboardOverview));
 router.get('/repositories', expressAsyncHandler(getRepositories));
+router.get('/languages', expressAsyncHandler(getRepositoryLanguages));
 router.get('/commits', expressAsyncHandler(getCommits));
 router.get('/issues', expressAsyncHandler(getIssues));
 router.get('/pull-requests', expressAsyncHandler(getPullRequests));

@@ -5,6 +5,7 @@ import {
   listIssues,
   listPullRequests,
   listRepositories,
+  listRepositoryLanguages,
 } from '../../services/catalog.service';
 
 const str = (value: unknown): string | undefined =>
@@ -21,6 +22,10 @@ export const getRepositories = async (req: Request, res: Response): Promise<void
       sort: str(req.query.sort) as 'pushed' | 'stars' | 'name' | undefined,
     }),
   );
+};
+
+export const getRepositoryLanguages = async (req: Request, res: Response): Promise<void> => {
+  res.json({ languages: await listRepositoryLanguages(req.auth!.id) });
 };
 
 export const getCommits = async (req: Request, res: Response): Promise<void> => {

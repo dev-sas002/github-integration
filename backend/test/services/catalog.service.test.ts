@@ -44,6 +44,7 @@ const mocks = vi.hoisted(() => {
     }),
     countDocuments: vi.fn(async () => total),
     aggregate: vi.fn(async () => []),
+    distinct: vi.fn(async () => [] as unknown[]),
     findOne: vi.fn(() => ({
       sort: () => ({ select: () => ({ lean: async () => null }) }),
       select: () => ({ lean: async () => null }),
@@ -72,6 +73,7 @@ import {
   listIssues,
   listPullRequests,
   listRepositories,
+  listRepositoryLanguages,
   resolvePaging,
 } from '../../src/services/catalog.service';
 
@@ -199,5 +201,19 @@ describe('listCommits / listIssues / listPullRequests', () => {
     await listIssues('u1', { limit: 9999 });
 
     expect(lastQuery().limit).toBe(100);
+  });
+});
+
+describe('listRepositoryLanguages', () => {
+  it('lists every language on the account, sorted, without blanks', async () => {
+    mocks.RepositoryModel.distinct.mockResolvedValueOnce(['Rust', 'Go', '', 'CSS']);
+
+    const languages = await listRepositoryLanguages('user-1');
+
+    expect(languages).toEqual(['CSS', 'Go', 'Rust']);
+    expect(mocks.RepositoryModel.distinct).toHaveBeenCalledWith('language', {
+      userId: 'user-1',
+      language: { $ne: null },
+    });
   });
 });

@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => {
 
   const catalog = {
     listRepositories: vi.fn(async () => ({ items: [], page: 1, limit: 25, total: 0 })),
+    listRepositoryLanguages: vi.fn(async () => ['Go', 'Rust']),
     listCommits: vi.fn(async () => ({ items: [] })),
     listIssues: vi.fn(async () => ({ items: [] })),
     listPullRequests: vi.fn(async () => ({ items: [] })),
@@ -68,6 +69,7 @@ describe('authentication guard', () => {
   const protectedRoutes: Array<[string, string]> = [
     ['get', '/api/catalog/overview'],
     ['get', '/api/catalog/repositories'],
+    ['get', '/api/catalog/languages'],
     ['get', '/api/sync/state'],
     ['post', '/api/sync'],
     ['get', '/api/insights/stale-pull-requests'],
@@ -142,6 +144,16 @@ describe('catalog routes', () => {
     await request(app).get('/api/catalog/overview?days=abc').set('Authorization', TOKEN);
 
     expect(mocks.catalog.getOverview).toHaveBeenCalledWith('user-1', 30);
+  });
+});
+
+describe('catalog languages', () => {
+  it('returns the account-wide language list', async () => {
+    const response = await request(app).get('/api/catalog/languages').set('Authorization', TOKEN);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ languages: ['Go', 'Rust'] });
+    expect(mocks.catalog.listRepositoryLanguages).toHaveBeenCalledWith('user-1');
   });
 });
 

@@ -42,15 +42,11 @@ export class RepositoriesComponent implements OnInit {
   protected language = '';
   protected sort: NonNullable<RepositoryFilters['sort']> = 'pushed';
 
-  protected readonly languages = computed(() => {
-    const seen = new Set<string>();
-    for (const repository of this.page()?.items ?? []) {
-      if (repository.language) {
-        seen.add(repository.language);
-      }
-    }
-    return Array.from(seen).sort();
-  });
+  /**
+   * Loaded once for the whole account. Deriving it from the current page
+   * meant that picking a language left only that language in the list.
+   */
+  protected readonly languages = signal<string[]>([]);
 
   protected readonly rangeLabel = computed(() => {
     const page = this.page();
@@ -69,6 +65,10 @@ export class RepositoriesComponent implements OnInit {
 
     if (this.session.isConnected()) {
       this.load(1);
+      this.api.listRepositoryLanguages().subscribe({
+        next: (response) => this.languages.set(response.languages),
+        error: () => this.languages.set([]),
+      });
     }
   }
 
