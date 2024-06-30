@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
@@ -13,9 +13,8 @@ export interface GithubStatus {
   providedIn: 'root',
 })
 export class GithubAuthService {
-  private apiUrl = `${environment.apiBaseUrl}/github`;
-
-  constructor(private http: HttpClient) {}
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = `${environment.apiBaseUrl}/github`;
 
   connect(): void {
     // Full page navigation: the backend answers with a 302 to GitHub.

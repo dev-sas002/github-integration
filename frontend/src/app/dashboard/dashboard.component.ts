@@ -40,17 +40,17 @@ const RESOURCE_LABELS: Record<string, string> = {
  * on its last run.
  */
 @Component({
-    selector: 'app-dashboard',
-    templateUrl: './dashboard.component.html',
-    styleUrls: ['./dashboard.component.css'],
-    imports: [
+  selector: 'app-dashboard',
+  templateUrl: './dashboard.component.html',
+  styleUrls: ['./dashboard.component.css'],
+  imports: [
     DatePipe,
     DecimalPipe,
     RouterLink,
     StatTileComponent,
     ColumnChartComponent,
-    BarListComponent
-]
+    BarListComponent,
+  ],
 })
 export class DashboardComponent implements OnInit {
   private readonly api = inject(GithubApiService);

@@ -15,7 +15,10 @@
   @if (!session.isConnected()) {
     <div class="notice">
       <span class="icon" aria-hidden="true">link_off</span>
-      <span>No account is connected. <a routerLink="/connection">Connect one</a> to see pull requests here.</span>
+      <span
+        >No account is connected. <a routerLink="/connection">Connect one</a> to see pull requests
+        here.</span
+      >
     </div>
   }
 
@@ -58,11 +61,11 @@
                     </span>
                   </div>
                   <div class="age">
-                    <span class="days" [attr.data-severity]="pr.severity">{{ pr.ageDays }} days</span>
+                    <span class="days" [attr.data-severity]="pr.severity"
+                      >{{ pr.ageDays }} days</span
+                    >
                     @if (pr.updatedAt) {
-                      <span class="muted">
-                        last touched {{ pr.updatedAt | date: 'd MMM y' }}
-                      </span>
+                      <span class="muted"> last touched {{ pr.updatedAt | date: 'd MMM y' }} </span>
                     }
                   </div>
                 </li>
@@ -85,5 +88,4 @@
       </section>
     }
   }
-
 </div>

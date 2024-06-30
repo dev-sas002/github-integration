@@ -1,4 +1,3 @@
-
 import { Component, Input, computed, signal } from '@angular/core';
 
 export interface BarItem {
@@ -15,9 +14,9 @@ export interface BarItem {
  * at the tip, which is why there are no gridlines.
  */
 @Component({
-    selector: 'app-bar-list',
-    imports: [],
-    template: `
+  selector: 'app-bar-list',
+  imports: [],
+  template: `
     @if (rows().length) {
       <ul class="bars">
         @for (row of rows(); track row.label) {
@@ -33,10 +32,9 @@ export interface BarItem {
     } @else {
       <p class="empty">Nothing to show yet.</p>
     }
-    
-    `,
-    styles: [
-        `
+  `,
+  styles: [
+    `
       .bars {
         display: grid;
         gap: 10px;
@@ -81,7 +79,7 @@ export interface BarItem {
         color: var(--text-primary);
       }
     `,
-    ]
+  ],
 })
 export class BarListComponent {
   private readonly data = signal<BarItem[]>([]);

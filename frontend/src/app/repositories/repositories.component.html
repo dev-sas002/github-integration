@@ -9,7 +9,10 @@
   @if (!session.isConnected()) {
     <div class="notice">
       <span class="icon" aria-hidden="true">link_off</span>
-      <span>No account is connected. <a routerLink="/connection">Connect one</a> to see repositories here.</span>
+      <span
+        >No account is connected. <a routerLink="/connection">Connect one</a> to see repositories
+        here.</span
+      >
     </div>
   }
 
@@ -31,7 +34,7 @@
             placeholder="owner/name"
             [value]="query"
             (input)="onSearch($any($event.target).value)"
-            />
+          />
         </div>
 
         <div class="field">
@@ -71,7 +74,7 @@
                 class="row"
                 [class.selected]="selected()?.externalId === repo.externalId"
                 (click)="select(repo)"
-                >
+              >
                 <td>
                   <button
                     type="button"
@@ -79,7 +82,7 @@
                     [attr.aria-expanded]="selected()?.externalId === repo.externalId"
                     aria-controls="repo-summary"
                     (click)="$event.stopPropagation(); select(repo)"
-                    >
+                  >
                     {{ repo.fullName }}
                   </button>
                   @if (repo.description) {
@@ -96,7 +99,9 @@
                 <td class="secondary">{{ repo.language ?? '—' }}</td>
                 <td class="num">{{ repo.stars | number }}</td>
                 <td class="num">{{ repo.openIssues | number }}</td>
-                <td class="secondary">{{ repo.pushedAt ? (repo.pushedAt | date: 'd MMM y') : '—' }}</td>
+                <td class="secondary">
+                  {{ repo.pushedAt ? (repo.pushedAt | date: 'd MMM y') : '—' }}
+                </td>
               </tr>
             }
           </tbody>
@@ -108,19 +113,25 @@
       }
 
       @if (page() && page()!.items.length === 0 && !loading()) {
-        <p class="empty">
-          No repositories match those filters.
-        </p>
+        <p class="empty">No repositories match those filters.</p>
       }
 
       @if (page(); as result) {
         <div class="pager">
           <span class="muted">{{ rangeLabel() }}</span>
           <div class="pager-buttons">
-            <button class="btn" (click)="load(result.page - 1)" [disabled]="result.page <= 1 || loading()">
+            <button
+              class="btn"
+              (click)="load(result.page - 1)"
+              [disabled]="result.page <= 1 || loading()"
+            >
               Previous
             </button>
-            <button class="btn" (click)="load(result.page + 1)" [disabled]="!result.hasNext || loading()">
+            <button
+              class="btn"
+              (click)="load(result.page + 1)"
+              [disabled]="!result.hasNext || loading()"
+            >
               Next
             </button>
           </div>

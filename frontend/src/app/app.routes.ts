@@ -10,7 +10,8 @@ export const routes: Routes = [
   {
     path: 'dashboard',
     title: 'Overview',
-    loadComponent: () => import('./dashboard/dashboard.component').then((m) => m.DashboardComponent),
+    loadComponent: () =>
+      import('./dashboard/dashboard.component').then((m) => m.DashboardComponent),
   },
   {
     path: 'repositories',

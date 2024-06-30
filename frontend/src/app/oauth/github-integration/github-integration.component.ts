@@ -17,10 +17,10 @@ import { GithubAuthService } from '../github-auth.service';
  * a URL to a server.
  */
 @Component({
-    selector: 'app-github-integration',
-    templateUrl: './github-integration.component.html',
-    styleUrls: ['./github-integration.component.css'],
-    imports: [DatePipe, RouterLink]
+  selector: 'app-github-integration',
+  templateUrl: './github-integration.component.html',
+  styleUrls: ['./github-integration.component.css'],
+  imports: [DatePipe, RouterLink],
 })
 export class GithubIntegrationComponent implements OnInit {
   private readonly api = inject(GithubApiService);

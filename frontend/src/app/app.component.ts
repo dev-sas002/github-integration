@@ -11,10 +11,10 @@ import { SessionService } from './core/session.service';
  * re-asks the backend who is signed in.
  */
 @Component({
-    selector: 'app-root',
-    templateUrl: './app.component.html',
-    styleUrls: ['./app.component.css'],
-    imports: [RouterOutlet, RouterLink, RouterLinkActive]
+  selector: 'app-root',
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.css'],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive],
 })
 export class AppComponent {
   readonly session = inject(SessionService);

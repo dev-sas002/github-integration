@@ -21,90 +21,93 @@
           <h2>GitHub</h2>
           @if (session.isConnected()) {
             <p class="secondary">
-              Connected@if (session.username(); as name) {
-              as {{ name }}
-              }@if (connectionDate(); as since) {
-              · since {{ since | date: 'd MMM y' }}
-            }
-          </p>
-        } @else {
-          <p class="secondary">Not connected.</p>
-        }
+              Connected
+              @if (session.username(); as name) {
+                as {{ name }}
+              }
+              @if (connectionDate(); as since) {
+                · since {{ since | date: 'd MMM y' }}
+              }
+            </p>
+          } @else {
+            <p class="secondary">Not connected.</p>
+          }
+        </div>
       </div>
-    </div>
 
-    @if (!session.isConnected()) {
-      <div class="actions">
-        <button class="btn btn-primary" (click)="connect()" [disabled]="!githubConfigured">
-          <span class="icon" aria-hidden="true">link</span>
-          Connect with GitHub
-        </button>
-        @if (demoAvailable()) {
-          <button class="btn" (click)="useDemoAccount()" [disabled]="busy()">
-            <span class="icon" aria-hidden="true">play_circle_outline</span>
-            Open the demo account
+      @if (!session.isConnected()) {
+        <div class="actions">
+          <button class="btn btn-primary" (click)="connect()" [disabled]="!githubConfigured">
+            <span class="icon" aria-hidden="true">link</span>
+            Connect with GitHub
           </button>
-        }
-      </div>
-    }
+          @if (demoAvailable()) {
+            <button class="btn" (click)="useDemoAccount()" [disabled]="busy()">
+              <span class="icon" aria-hidden="true">play_circle_outline</span>
+              Open the demo account
+            </button>
+          }
+        </div>
+      }
 
-    @if (session.isConnected()) {
-      <div class="actions">
-        <button class="btn" (click)="disconnect()" [disabled]="busy()">
-          <span class="icon" aria-hidden="true">link_off</span>
-          Disconnect
-        </button>
-      </div>
-    }
-  </div>
-
-  @if (!githubConfigured) {
-    <div class="card-body note">
-      <span class="icon" aria-hidden="true">info_outline</span>
-      <span>
-        No GitHub OAuth app is configured on this deployment, so the connect flow is disabled. Set
-        <code class="mono">GITHUB_CLIENT_ID</code> and <code class="mono">GITHUB_CLIENT_SECRET</code>
-        to enable it — the rest of the API runs without them.
-      </span>
+      @if (session.isConnected()) {
+        <div class="actions">
+          <button class="btn" (click)="disconnect()" [disabled]="busy()">
+            <span class="icon" aria-hidden="true">link_off</span>
+            Disconnect
+          </button>
+        </div>
+      }
     </div>
-  }
-</section>
 
-<section class="card">
-  <div class="card-head">
-    <h2>Providers</h2>
-    <span class="hint">Everything registered in the provider registry</span>
-  </div>
-  <div class="card-body">
-    <table class="data">
-      <thead>
-        <tr>
-          <th>Provider</th>
-          <th>Identifier</th>
-          <th>Credentials</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (provider of providers(); track provider.id) {
-          <tr>
-            <td>{{ provider.displayName }}</td>
-            <td class="mono secondary">{{ provider.id }}</td>
-            <td>
-              <span class="chip" [class.ok]="provider.configured">
-                {{ provider.configured ? 'Configured' : 'Not configured' }}
-              </span>
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
-    @if (!providers().length) {
-      <p class="empty">Could not reach the API.</p>
+    @if (!githubConfigured) {
+      <div class="card-body note">
+        <span class="icon" aria-hidden="true">info_outline</span>
+        <span>
+          No GitHub OAuth app is configured on this deployment, so the connect flow is disabled. Set
+          <code class="mono">GITHUB_CLIENT_ID</code> and
+          <code class="mono">GITHUB_CLIENT_SECRET</code>
+          to enable it — the rest of the API runs without them.
+        </span>
+      </div>
     }
-  </div>
-</section>
+  </section>
 
-<p class="secondary footnote">
-  Once connected, head to the <a routerLink="/dashboard">overview</a> and run a sync.
-</p>
+  <section class="card">
+    <div class="card-head">
+      <h2>Providers</h2>
+      <span class="hint">Everything registered in the provider registry</span>
+    </div>
+    <div class="card-body">
+      <table class="data">
+        <thead>
+          <tr>
+            <th>Provider</th>
+            <th>Identifier</th>
+            <th>Credentials</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (provider of providers(); track provider.id) {
+            <tr>
+              <td>{{ provider.displayName }}</td>
+              <td class="mono secondary">{{ provider.id }}</td>
+              <td>
+                <span class="chip" [class.ok]="provider.configured">
+                  {{ provider.configured ? 'Configured' : 'Not configured' }}
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      @if (!providers().length) {
+        <p class="empty">Could not reach the API.</p>
+      }
+    </div>
+  </section>
+
+  <p class="secondary footnote">
+    Once connected, head to the <a routerLink="/dashboard">overview</a> and run a sync.
+  </p>
 </div>

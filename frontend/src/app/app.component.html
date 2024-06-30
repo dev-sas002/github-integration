@@ -15,7 +15,8 @@
     <div class="account">
       @if (session.isConnected()) {
         <span class="chip">
-          <span class="icon" aria-hidden="true">account_circle</span>{{ session.username() ?? 'Connected' }}
+          <span class="icon" aria-hidden="true">account_circle</span
+          >{{ session.username() ?? 'Connected' }}
         </span>
       } @else {
         <span class="chip">Not connected</span>

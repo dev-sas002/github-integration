@@ -14,7 +14,11 @@
       }
     </div>
 
-    <button class="btn btn-primary" (click)="sync()" [disabled]="syncing() || !session.isConnected()">
+    <button
+      class="btn btn-primary"
+      (click)="sync()"
+      [disabled]="syncing() || !session.isConnected()"
+    >
       <span class="icon" aria-hidden="true">sync</span>
       {{ syncing() ? 'Syncing…' : 'Sync now' }}
     </button>
@@ -30,7 +34,10 @@
   @if (!session.isConnected()) {
     <div class="notice">
       <span class="icon" aria-hidden="true">link_off</span>
-      <span>No account is connected yet. <a routerLink="/connection">Connect one</a> to populate this dashboard.</span>
+      <span
+        >No account is connected yet. <a routerLink="/connection">Connect one</a> to populate this
+        dashboard.</span
+      >
     </div>
   }
 
@@ -40,9 +47,12 @@
       <span>
         {{ report.mode === 'full' ? 'Full' : 'Incremental' }} sync finished in
         {{ report.durationMs | number }} ms · {{ report.pagesFetched }} pages fetched ·
-        {{ report.conditionalHits }} listings unchanged (304, no quota spent)@if (report.rateLimit?.remaining !== null && report.rateLimit?.remaining !== undefined) {
-        · {{ report.rateLimit?.remaining }} of {{ report.rateLimit?.limit }} API calls left this hour
-        }.
+        {{ report.conditionalHits }} listings unchanged (304, no quota spent)
+        @if (report.rateLimit?.remaining !== null && report.rateLimit?.remaining !== undefined) {
+          · {{ report.rateLimit?.remaining }} of {{ report.rateLimit?.limit }} API calls left this
+          hour
+        }
+        .
       </span>
     </div>
   }
@@ -51,7 +61,10 @@
     @if (data.counts.repositories === 0 && !syncing()) {
       <div class="notice">
         <span class="icon" aria-hidden="true">inbox</span>
-        <span>Nothing has been synced for this account yet. Press <strong>Sync now</strong> to run the pipeline.</span>
+        <span
+          >Nothing has been synced for this account yet. Press <strong>Sync now</strong> to run the
+          pipeline.</span
+        >
       </div>
     }
     <section class="tiles">
@@ -60,7 +73,7 @@
         label="Commits"
         [value]="data.counts.commits"
         [note]="commitsInWindow() + ' in the last ' + ACTIVITY_DAYS + ' days'"
-        />
+      />
       <app-stat-tile label="Open issues" [value]="data.counts.openIssues" />
       <app-stat-tile label="Open pull requests" [value]="data.counts.openPullRequests" />
       <app-stat-tile
@@ -68,7 +81,7 @@
         [value]="data.counts.stalePullRequests"
         [accent]="data.counts.stalePullRequests > 0"
         note="No activity past the threshold"
-        />
+      />
     </section>
     <section class="card">
       <div class="card-head">

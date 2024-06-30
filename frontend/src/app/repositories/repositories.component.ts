@@ -16,10 +16,10 @@ import { SessionService } from '../core/session.service';
  * repositories.
  */
 @Component({
-    selector: 'app-repositories',
-    templateUrl: './repositories.component.html',
-    styleUrls: ['./repositories.component.css'],
-    imports: [FormsModule, DatePipe, DecimalPipe, RouterLink]
+  selector: 'app-repositories',
+  templateUrl: './repositories.component.html',
+  styleUrls: ['./repositories.component.css'],
+  imports: [FormsModule, DatePipe, DecimalPipe, RouterLink],
 })
 export class RepositoriesComponent implements OnInit {
   private readonly api = inject(GithubApiService);
@@ -57,9 +57,7 @@ export class RepositoriesComponent implements OnInit {
 
   ngOnInit(): void {
     // Typing must not fire a request per keystroke.
-    this.searchInput
-      .pipe(debounceTime(250), distinctUntilChanged())
-      .subscribe(() => this.load(1));
+    this.searchInput.pipe(debounceTime(250), distinctUntilChanged()).subscribe(() => this.load(1));
 
     if (this.session.isConnected()) {
       this.load(1);
