@@ -342,6 +342,8 @@ export interface SyncStateView {
   lastError: string | null;
   recordCount: number;
   hasEtag: boolean;
+  /** True while a truncated walk is waiting to be continued by the next run. */
+  resumePending: boolean;
 }
 
 /** Exposes the pipeline's resume points, which is what makes it debuggable. */
@@ -355,6 +357,7 @@ export const getSyncState = async (userId: Id): Promise<SyncStateView[]> => {
       lastError: 1,
       recordCount: 1,
       etag: 1,
+      resumeCursor: 1,
     })
     .sort({ resource: 1, scopeId: 1 })
     .lean();
@@ -369,5 +372,6 @@ export const getSyncState = async (userId: Id): Promise<SyncStateView[]> => {
     // The ETag itself is an opaque upstream value; only its presence is useful
     // to a reader, and not echoing it keeps the response free of cache tokens.
     hasEtag: Boolean(state.etag),
+    resumePending: Boolean(state.resumeCursor),
   }));
 };

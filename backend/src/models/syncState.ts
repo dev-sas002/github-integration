@@ -1,6 +1,8 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { ResourceKind } from '../domain/types';
 
+export type SyncStatus = 'ok' | 'partial' | 'not_modified' | 'error' | 'rate_limited';
+
 export interface ISyncState extends Document {
   userId: mongoose.Types.ObjectId;
   provider: string;
@@ -11,7 +13,11 @@ export interface ISyncState extends Document {
   etag: string | null;
   /** Watermark handed to the provider as `since` on the next run. */
   lastSyncedAt: Date | null;
-  lastStatus: 'ok' | 'not_modified' | 'error' | 'rate_limited';
+  /** `rel="next"` URL a truncated walk stopped at; the next run starts there. */
+  resumeCursor: string | null;
+  /** Watermark to adopt once a resumed walk reaches the end of the listing. */
+  pendingWatermark: Date | null;
+  lastStatus: SyncStatus;
   lastError: string | null;
   recordCount: number;
 }
@@ -29,9 +35,11 @@ const SyncStateSchema: Schema = new Schema(
     scopeId: { type: String, default: '' },
     etag: { type: String, default: null },
     lastSyncedAt: { type: Date, default: null },
+    resumeCursor: { type: String, default: null },
+    pendingWatermark: { type: Date, default: null },
     lastStatus: {
       type: String,
-      enum: ['ok', 'not_modified', 'error', 'rate_limited'],
+      enum: ['ok', 'partial', 'not_modified', 'error', 'rate_limited'],
       default: 'ok',
     },
     lastError: { type: String, default: null },

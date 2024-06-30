@@ -11,7 +11,15 @@ import { PageRequest, ProviderPage, RepositoryScope } from '../../src/domain/typ
  * no HTTP client and no database anywhere in the picture.
  */
 const mocks = vi.hoisted(() => {
-  const states = new Map<string, { etag: string | null; lastSyncedAt: Date | null }>();
+  const states = new Map<
+    string,
+    {
+      etag: string | null;
+      lastSyncedAt: Date | null;
+      resumeCursor?: string | null;
+      pendingWatermark?: Date | null;
+    }
+  >();
   const savedStates: any[] = [];
 
   const SyncStateModel = {
@@ -225,6 +233,111 @@ describe('SyncService.run — pagination', () => {
     const report = await new SyncService(provider).run(USER, TOKEN);
 
     expect(report.results[0].pagesFetched).toBe(5);
+    expect(report.results[0].status).toBe('partial');
+  });
+});
+
+describe('SyncService.run — truncated walks', () => {
+  const capped = () =>
+    new FakeProvider({
+      repositories: [emptyPage({ items: [repo('1', 'a')] })],
+      commits: () => [emptyPage({ items: [{}], nextCursor: 'commits-next', etag: '"c1"' })],
+    });
+
+  it('keeps the old watermark and ETag and stores where it stopped', async () => {
+    const watermark = new Date('2026-09-01T00:00:00Z');
+    mocks.states.set('commits:1', { etag: '"old"', lastSyncedAt: watermark });
+
+    const report = await new SyncService(capped()).run(USER, TOKEN);
+
+    const saved = stateFor('commits', '1')[0].update;
+    expect(saved.lastStatus).toBe('partial');
+    expect(saved).not.toHaveProperty('lastSyncedAt');
+    expect(saved).not.toHaveProperty('etag');
+    expect(saved.resumeCursor).toBe('commits-next');
+    expect(saved.pendingWatermark).toBeInstanceOf(Date);
+    expect(report.warnings.join(' ')).toMatch(/Stopped early on commits/);
+  });
+
+  it('resumes from the stored cursor without a validator on the next run', async () => {
+    const watermark = new Date('2026-09-01T00:00:00Z');
+    mocks.states.set('commits:1', {
+      etag: '"old"',
+      lastSyncedAt: watermark,
+      resumeCursor: 'commits-next',
+      pendingWatermark: new Date('2026-09-10T00:00:00Z'),
+    });
+    const provider = new FakeProvider({
+      repositories: [emptyPage({ items: [repo('1', 'a')] })],
+      commits: () => [emptyPage({ items: [{}], nextCursor: null, etag: '"page-n"' })],
+    });
+
+    await new SyncService(provider).run(USER, TOKEN);
+
+    const call = provider.calls.find((entry) => entry.resource === 'commits');
+    expect(call?.page.cursor).toBe('commits-next');
+    expect(call?.page.etag).toBeNull();
+    expect(call?.page.since).toBe(watermark);
+  });
+
+  it('adopts the pending watermark once the resumed walk finishes', async () => {
+    const pending = new Date('2026-09-10T00:00:00Z');
+    mocks.states.set('commits:1', {
+      etag: '"old"',
+      lastSyncedAt: new Date('2026-09-01T00:00:00Z'),
+      resumeCursor: 'commits-next',
+      pendingWatermark: pending,
+    });
+    const provider = new FakeProvider({
+      repositories: [emptyPage({ items: [repo('1', 'a')] })],
+      commits: () => [emptyPage({ items: [{}], nextCursor: null, etag: '"page-n"' })],
+    });
+
+    await new SyncService(provider).run(USER, TOKEN);
+
+    const saved = stateFor('commits', '1')[0].update;
+    expect(saved.lastStatus).toBe('ok');
+    expect(saved.lastSyncedAt).toBe(pending);
+    expect(saved.resumeCursor).toBeNull();
+    expect(saved.pendingWatermark).toBeNull();
+    // A page from the middle of the listing is no validator for the first page.
+    expect(saved.etag).toBe('"old"');
+  });
+
+  it('ignores a stored cursor on a full resync', async () => {
+    mocks.states.set('commits:1', {
+      etag: null,
+      lastSyncedAt: null,
+      resumeCursor: 'commits-next',
+      pendingWatermark: null,
+    });
+    const provider = capped();
+
+    await new SyncService(provider).run(USER, TOKEN, { full: true });
+
+    const call = provider.calls.find((entry) => entry.resource === 'commits');
+    expect(call?.page.cursor).toBeNull();
+  });
+
+  it('walks the stored repositories when the repository listing was cut short', async () => {
+    mocks.RepositoryModel.find.mockReturnValueOnce({
+      select: () => ({
+        sort: () => ({
+          lean: async () => [
+            { owner: 'o', name: 'a', externalId: '1', fullName: 'o/a' },
+            { owner: 'o', name: 'z', externalId: '9', fullName: 'o/z' },
+          ],
+        }),
+      }),
+    } as any);
+    const provider = new FakeProvider({
+      repositories: [emptyPage({ items: [repo('1', 'a')], nextCursor: 'always-more' })],
+    });
+
+    await new SyncService(provider).run(USER, TOKEN);
+
+    const scopes = new Set(provider.calls.filter((c) => c.scope).map((c) => c.scope));
+    expect([...scopes]).toEqual(['1', '9']);
   });
 });
 

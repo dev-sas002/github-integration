@@ -10,6 +10,7 @@ import {
   RepositoryScope,
   ResourceKind,
 } from '../domain/types';
+import { SyncStatus } from '../models/syncState';
 import { mapWithConcurrency } from '../lib/concurrency';
 import logger from '../lib/logger';
 import SyncStateModel from '../models/syncState';
@@ -35,7 +36,11 @@ export interface ResourceSyncResult {
   fetched: number;
   upserted: number;
   notModified: boolean;
-  status: 'ok' | 'not_modified' | 'error' | 'rate_limited';
+  /**
+   * `partial` means the walk stopped early (page cap or quota floor) with more
+   * pages upstream; the next run resumes from where this one stopped.
+   */
+  status: SyncStatus;
   error?: string;
 }
 
@@ -63,6 +68,8 @@ interface WalkInput<T> {
   scopeName: string;
   since: Date | null;
   etag: string | null;
+  /** Where an earlier, truncated walk stopped; the walk continues from there. */
+  resumeCursor: string | null;
   fetchPage: (page: PageRequest) => Promise<ProviderPage<T>>;
   persist: (items: T[]) => Promise<{ upserted: number }>;
 }
@@ -71,7 +78,16 @@ interface WalkOutput<T> {
   result: ResourceSyncResult;
   items: T[];
   etag: string | null;
+  /** Set when the walk stopped with pages left upstream. */
+  remainingCursor: string | null;
   rateLimit: RateLimitSnapshot | null;
+}
+
+interface StoredState {
+  etag: string | null;
+  lastSyncedAt: Date | null;
+  resumeCursor: string | null;
+  pendingWatermark: Date | null;
 }
 
 /**
@@ -93,7 +109,7 @@ export class SyncService {
    */
   private async walk<T>(input: WalkInput<T>): Promise<WalkOutput<T>> {
     const collected: T[] = [];
-    let cursor: string | null = null;
+    let cursor: string | null = input.resumeCursor;
     let pagesFetched = 0;
     let upserted = 0;
     let etag = input.etag;
@@ -103,8 +119,9 @@ export class SyncService {
       const response: ProviderPage<T> = await input.fetchPage({
         cursor,
         pageSize: appConfig.syncPageSize,
-        // The validator only applies to the first request of the listing.
-        etag: page === 0 ? input.etag : null,
+        // The validator only applies to the first page of a fresh walk; a
+        // resumed walk starts mid-listing, where it means nothing.
+        etag: page === 0 && !input.resumeCursor ? input.etag : null,
         since: input.since,
       });
 
@@ -127,13 +144,14 @@ export class SyncService {
           },
           items: [],
           etag: response.etag ?? input.etag,
+          remainingCursor: null,
           rateLimit,
         };
       }
 
       pagesFetched += 1;
 
-      if (page === 0 && response.etag) {
+      if (page === 0 && !input.resumeCursor && response.etag) {
         etag = response.etag;
       }
 
@@ -168,10 +186,11 @@ export class SyncService {
         fetched: collected.length,
         upserted,
         notModified: false,
-        status: 'ok',
+        status: cursor ? 'partial' : 'ok',
       },
       items: collected,
       etag,
+      remainingCursor: cursor,
       rateLimit,
     };
   }
@@ -192,7 +211,7 @@ export class SyncService {
     userId: mongoose.Types.ObjectId | string,
     resource: ResourceKind,
     scopeId: string,
-  ): Promise<{ etag: string | null; lastSyncedAt: Date | null }> {
+  ): Promise<StoredState> {
     const state = await SyncStateModel.findOne({
       userId,
       provider: this.provider.id,
@@ -203,30 +222,53 @@ export class SyncService {
     return {
       etag: (state?.etag as string | null) ?? null,
       lastSyncedAt: (state?.lastSyncedAt as Date | null) ?? null,
+      resumeCursor: (state?.resumeCursor as string | null) ?? null,
+      pendingWatermark: (state?.pendingWatermark as Date | null) ?? null,
     };
   }
 
+  /**
+   * Records the outcome of one walk.
+   *
+   * The watermark only moves when a listing has been walked to its end. A
+   * failed walk keeps everything as it was. A truncated walk keeps the old
+   * watermark and ETag and stores the cursor it stopped at, so the next run
+   * picks up the remaining pages instead of declaring them synced; the
+   * watermark it eventually advances to is the start of the first run in
+   * that chain, so nothing changed upstream in between is skipped.
+   */
   private async saveState(
     userId: mongoose.Types.ObjectId | string,
     result: ResourceSyncResult,
-    etag: string | null,
+    previous: StoredState,
+    walk: { etag: string | null; remainingCursor: string | null } | null,
     syncedAt: Date,
   ): Promise<void> {
+    const outcome = {
+      lastStatus: result.status,
+      lastError: result.error ?? null,
+      recordCount: result.fetched,
+    };
+
+    let progress: Record<string, unknown> = {};
+
+    if (walk && result.status === 'partial') {
+      progress = {
+        resumeCursor: walk.remainingCursor,
+        pendingWatermark: previous.pendingWatermark ?? syncedAt,
+      };
+    } else if (walk) {
+      progress = {
+        etag: walk.etag,
+        lastSyncedAt: previous.pendingWatermark ?? syncedAt,
+        resumeCursor: null,
+        pendingWatermark: null,
+      };
+    }
+
     await SyncStateModel.findOneAndUpdate(
       { userId, provider: this.provider.id, resource: result.resource, scopeId: result.scopeId },
-      {
-        $set: {
-          etag,
-          // A failed run must not advance the watermark, or the records it
-          // never fetched would be skipped forever.
-          ...(result.status === 'error' || result.status === 'rate_limited'
-            ? {}
-            : { lastSyncedAt: syncedAt }),
-          lastStatus: result.status,
-          lastError: result.error ?? null,
-          recordCount: result.fetched,
-        },
-      },
+      { $set: { ...outcome, ...progress } },
       { upsert: true, new: true, setDefaultsOnInsert: true },
     );
   }
@@ -267,23 +309,27 @@ export class SyncService {
     let repositories: RepositoryRecord[] = [];
 
     try {
+      const resumeCursor = full ? null : repoState.resumeCursor;
       const walked = await this.walk<RepositoryRecord>({
         resource: 'repositories',
         scopeId: '',
         scopeName: this.provider.displayName,
         since: null,
         etag: full ? null : repoState.etag,
+        resumeCursor,
         fetchPage: (page) => this.provider.listRepositories(token, page),
         persist: (items) => persistRepositories(userId, this.provider.id, items, startedAt),
       });
 
-      repositories = walked.items;
+      // Only a walk that saw the whole listing from its first page knows the
+      // full set of repositories; otherwise the stored ones are used.
+      repositories = walked.result.status === 'ok' && !resumeCursor ? walked.items : [];
       results.push(walked.result);
-      await this.saveState(userId, walked.result, walked.etag, startedAt);
+      await this.saveState(userId, walked.result, repoState, walked, startedAt);
     } catch (error) {
       const failure = SyncService.toFailure('repositories', '', this.provider.displayName, error);
       results.push(failure);
-      await this.saveState(userId, failure, repoState.etag, startedAt);
+      await this.saveState(userId, failure, repoState, null, startedAt);
       return this.finish(startedAt, full, results, [
         'Repository listing failed; nothing else was synced.',
       ]);
@@ -313,6 +359,10 @@ export class SyncService {
         warnings.push(
           `Rate limited while syncing ${result.resource} for ${result.scopeName}; it will resume on the next run.`,
         );
+      } else if (result.status === 'partial') {
+        warnings.push(
+          `Stopped early on ${result.resource} for ${result.scopeName}; the next run continues from the last page fetched.`,
+        );
       }
     }
 
@@ -320,9 +370,9 @@ export class SyncService {
   }
 
   /**
-   * Chooses which repositories to walk. Freshly listed ones win; on a 304 run
-   * the stored repositories are used instead so a no-change listing still
-   * refreshes commits, issues and pull requests.
+   * Chooses which repositories to walk. A complete fresh listing wins;
+   * otherwise (a 304, or a listing walked only in part) the stored
+   * repositories are used, so commits, issues and pull requests still refresh.
    */
   private async resolveScopes(
     userId: mongoose.Types.ObjectId | string,
@@ -401,12 +451,13 @@ export class SyncService {
           scopeName: scope.fullName,
           since: full ? null : state.lastSyncedAt,
           etag: full ? null : state.etag,
+          resumeCursor: full ? null : state.resumeCursor,
           fetchPage: job.fetch,
           persist: job.persist,
         });
 
         results.push(walked.result);
-        await this.saveState(userId, walked.result, walked.etag, startedAt);
+        await this.saveState(userId, walked.result, state, walked, startedAt);
       } catch (error) {
         const failure = SyncService.toFailure(
           job.resource,
@@ -420,7 +471,7 @@ export class SyncService {
           message: failure.error,
         });
         results.push(failure);
-        await this.saveState(userId, failure, state.etag, startedAt);
+        await this.saveState(userId, failure, state, null, startedAt);
       }
     }
 
