@@ -18,7 +18,7 @@ const PUBLIC_URL = (process.env.MOCK_GITHUB_PUBLIC_URL ?? `http://localhost:${PO
   '',
 );
 
-const OWNER = 'octo-labs';
+const OWNER = 'fernhollow-demo';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const daysAgo = (days: number, hour = 10): string => {
   const date = new Date(Date.now() - days * DAY_MS);
@@ -86,7 +86,7 @@ const SUBJECTS = [
   'Skip archived repositories on the nightly run',
 ];
 
-const AUTHORS = ['rmartinez', 'kwabena-a', 'ylin', 'dtanaka'];
+const AUTHORS = ['rosa-demo', 'kwabena-demo', 'yue-demo', 'daichi-demo'];
 
 const etagFor = (value: unknown): string =>
   `"${crypto.createHash('sha1').update(JSON.stringify(value)).digest('hex').slice(0, 16)}"`;
@@ -126,8 +126,8 @@ app.use(express.json());
 app.get('/user', (_req, res) => {
   res.json({
     id: 900001,
-    login: 'octo-labs-demo',
-    name: 'Octo Labs (demo)',
+    login: 'fernhollow-maintainer',
+    name: 'Fernhollow Labs (demo)',
     avatar_url: `${PUBLIC_URL}/avatar.png`,
     html_url: `https://github.com/${OWNER}`,
   });

@@ -48,7 +48,7 @@ interface RepoSpec {
   }>;
 }
 
-const OWNER = 'octo-labs';
+const OWNER = 'fernhollow-demo';
 
 const REPO_SPECS: RepoSpec[] = [
   {
@@ -277,10 +277,10 @@ const COMMIT_SUBJECTS = [
 ];
 
 const AUTHORS = [
-  { login: 'rmartinez', name: 'Rosa Martinez', email: 'rosa@example.invalid' },
-  { login: 'kwabena-a', name: 'Kwabena Asante', email: 'kwabena@example.invalid' },
-  { login: 'ylin', name: 'Yue Lin', email: 'yue@example.invalid' },
-  { login: 'dtanaka', name: 'Daichi Tanaka', email: 'daichi@example.invalid' },
+  { login: 'rosa-demo', name: 'Rosa (demo)', email: 'rosa@example.invalid' },
+  { login: 'kwabena-demo', name: 'Kwabena (demo)', email: 'kwabena@example.invalid' },
+  { login: 'yue-demo', name: 'Yue (demo)', email: 'yue@example.invalid' },
+  { login: 'daichi-demo', name: 'Daichi (demo)', email: 'daichi@example.invalid' },
 ];
 
 /** Deterministic pseudo-random so repeated seeds produce identical screenshots. */
@@ -310,7 +310,7 @@ export const seed = async (): Promise<{
   ]);
 
   const user = await UserModel.create({
-    username: 'octo-labs-demo',
+    username: 'fernhollow-maintainer',
     githubId: 'demo-1',
     accessToken: DEMO_TOKEN,
   });
@@ -319,7 +319,7 @@ export const seed = async (): Promise<{
     { userId: user._id, provider: 'GitHub' },
     {
       connectedAt: daysAgo(12),
-      accountLogin: 'octo-labs-demo',
+      accountLogin: 'fernhollow-maintainer',
       accountProfileUrl: `https://github.com/${OWNER}`,
     },
     { upsert: true, setDefaultsOnInsert: true },
