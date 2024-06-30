@@ -50,34 +50,32 @@ export interface AuthenticateOptions {
 export const authenticate =
   (options: AuthenticateOptions = {}) =>
   async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const { authorization } = req.headers;
+    // Express 5 forwards a rejected promise to the error handler, so the
+    // HttpErrors below need no try/catch around them.
+    const { authorization } = req.headers;
 
-      if (!authorization) {
-        throw new HttpError(401, options.missingMessage ?? 'Missing Authorization header', {
-          details: options.extra,
-        });
-      }
-
-      const token = safeDecode(authorization);
-      const user = await UserModel.findOne({ accessToken: token });
-
-      if (!user) {
-        throw new HttpError(
-          options.invalidStatus ?? 401,
-          options.invalidMessage ?? 'Invalid access token',
-          { details: options.extra },
-        );
-      }
-
-      req.auth = {
-        id: String(user._id),
-        username: String(user.username ?? ''),
-        token,
-      };
-
-      next();
-    } catch (error) {
-      next(error);
+    if (!authorization) {
+      throw new HttpError(401, options.missingMessage ?? 'Missing Authorization header', {
+        details: options.extra,
+      });
     }
+
+    const token = safeDecode(authorization);
+    const user = await UserModel.findOne({ accessToken: token });
+
+    if (!user) {
+      throw new HttpError(
+        options.invalidStatus ?? 401,
+        options.invalidMessage ?? 'Invalid access token',
+        { details: options.extra },
+      );
+    }
+
+    req.auth = {
+      id: String(user._id),
+      username: String(user.username ?? ''),
+      token,
+    };
+
+    next();
   };

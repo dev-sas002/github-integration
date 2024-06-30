@@ -16,7 +16,10 @@ export const getStalePrs = async (req: Request, res: Response): Promise<void> =>
  * Narrative summary for one repository. `source` in the response says whether
  * the prose came from the model or from the local fallback.
  */
-export const getRepositorySummary = async (req: Request, res: Response): Promise<void> => {
+export const getRepositorySummary = async (
+  req: Request<{ repositoryId: string }>,
+  res: Response,
+): Promise<void> => {
   res.json(
     await getRepositoryInsight(req.auth!.id, req.params.repositoryId, {
       refresh: req.query.refresh === 'true',

@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import expressAsyncHandler from 'express-async-handler';
 import {
   checkStatus,
   handleGitHubOAuthCallback,
@@ -12,15 +11,15 @@ import { authenticate } from '../http/middleware/authenticate';
 const router = Router();
 
 router.get('/providers', listConfiguredProviders);
-router.get('/connect', expressAsyncHandler(initiateGitHubOAuth));
-router.get('/callback', expressAsyncHandler(handleGitHubOAuthCallback));
+router.get('/connect', initiateGitHubOAuth);
+router.get('/callback', handleGitHubOAuthCallback);
 
 router.get(
   '/status',
   // The SPA polls this before it has a token, so an unauthenticated answer
   // still has to carry `isConnected: false` rather than a bare message.
   authenticate({ extra: { isConnected: false } }),
-  expressAsyncHandler(checkStatus),
+  checkStatus,
 );
 
 router.delete(
@@ -29,7 +28,7 @@ router.delete(
     invalidStatus: 404,
     invalidMessage: 'GitHub integration not found for user',
   }),
-  expressAsyncHandler(removeIntegration),
+  removeIntegration,
 );
 
 export default router;
