@@ -207,13 +207,26 @@ export class GitHubProvider implements SourceProvider {
     });
 
     // `/pulls` has no `since` filter, so the watermark is applied client-side.
-    // The listing is sorted by `updated` descending, which is what lets the
-    // pipeline stop walking as soon as it sees an older record.
-    return this.toPage(response, (items) =>
-      items
-        .map((item) => mapPullRequest(item, repo.externalId, repo.fullName))
-        .filter((pr) => !page.since || !pr.updatedAt || pr.updatedAt > page.since),
+    // The listing is sorted by `updated` descending, so once a page holds a
+    // record at or before the watermark every later page is older still and
+    // the walk ends there instead of paging through the whole history.
+    const since = page.since ?? null;
+    const mapped = this.toPage(response, (items) =>
+      items.map((item) => mapPullRequest(item, repo.externalId, repo.fullName)),
     );
+
+    if (!since) {
+      return mapped;
+    }
+
+    const fresh = mapped.items.filter((pr) => !pr.updatedAt || pr.updatedAt > since);
+    const reachedWatermark = fresh.length < mapped.items.length;
+
+    return {
+      ...mapped,
+      items: fresh,
+      nextCursor: reachedWatermark ? null : mapped.nextCursor,
+    };
   }
 
   /**

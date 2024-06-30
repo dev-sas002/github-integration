@@ -273,6 +273,40 @@ describe('listPullRequests', () => {
     // The filter is ours; GitHub was never asked for a `since` it does not support.
     expect(client.request.mock.calls[0][0].params.since).toBeUndefined();
   });
+
+  it('ends the walk once a page reaches back past the watermark', async () => {
+    client.request.mockResolvedValue(
+      response(
+        [
+          { id: 1, number: 1, title: 'fresh', state: 'open', updated_at: '2026-09-10T00:00:00Z' },
+          { id: 2, number: 2, title: 'old', state: 'open', updated_at: '2026-08-01T00:00:00Z' },
+        ],
+        { nextUrl: 'https://api.github.com/repositories/1/pulls?page=2' },
+      ),
+    );
+
+    const page = await provider.listPullRequests('Bearer t', REPO, {
+      since: new Date('2026-09-01T00:00:00Z'),
+    });
+
+    expect(page.nextCursor).toBeNull();
+  });
+
+  it('keeps walking while every record on the page is newer than the watermark', async () => {
+    const next = 'https://api.github.com/repositories/1/pulls?page=2';
+    client.request.mockResolvedValue(
+      response(
+        [{ id: 1, number: 1, title: 'fresh', state: 'open', updated_at: '2026-09-10T00:00:00Z' }],
+        { nextUrl: next },
+      ),
+    );
+
+    const page = await provider.listPullRequests('Bearer t', REPO, {
+      since: new Date('2026-09-01T00:00:00Z'),
+    });
+
+    expect(page.nextCursor).toBe(next);
+  });
 });
 
 describe('revokeToken', () => {
