@@ -1,7 +1,6 @@
 import { DatePipe, DecimalPipe, NgFor, NgIf } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { Paginated, Repository, RepositoryInsight } from '../core/api.types';
@@ -21,7 +20,7 @@ import { SessionService } from '../core/session.service';
   standalone: true,
   templateUrl: './repositories.component.html',
   styleUrls: ['./repositories.component.css'],
-  imports: [NgIf, NgFor, FormsModule, DatePipe, DecimalPipe, RouterLink, MatIconModule],
+  imports: [NgIf, NgFor, FormsModule, DatePipe, DecimalPipe, RouterLink],
 })
 export class RepositoriesComponent implements OnInit {
   private readonly api = inject(GithubApiService);

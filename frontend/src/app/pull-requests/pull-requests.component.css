@@ -2,10 +2,8 @@
   margin-bottom: 16px;
 }
 
-.notice mat-icon {
+.notice .icon {
   font-size: 18px;
-  width: 18px;
-  height: 18px;
   flex: none;
 }
 
@@ -25,10 +23,8 @@
   text-transform: uppercase;
 }
 
-.group-head mat-icon {
+.group-head .icon {
   font-size: 17px;
-  width: 17px;
-  height: 17px;
 }
 
 /* Colour is the third channel here; the icon and the word carry the meaning. */

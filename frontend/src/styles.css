@@ -170,10 +170,8 @@ a:hover {
   border-color: #000000;
 }
 
-.btn .material-icons {
+.btn .icon {
   font-size: 17px;
-  width: 17px;
-  height: 17px;
 }
 
 .field {
@@ -244,6 +242,26 @@ table.data th.num {
 }
 
 /* --- Small pieces -------------------------------------------------------- */
+
+/* Ligature icons from the Material Icons font: the text is the icon name. */
+.icon {
+  display: inline-block;
+  flex: none;
+  width: 1em;
+  height: 1em;
+  overflow: hidden;
+  font-family: 'Material Icons';
+  font-size: 18px;
+  font-style: normal;
+  font-weight: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  direction: ltr;
+  font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
 
 .chip {
   display: inline-flex;

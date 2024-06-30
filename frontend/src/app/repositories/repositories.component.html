@@ -7,12 +7,12 @@
   </div>
 
   <div class="notice" *ngIf="!session.isConnected()">
-    <mat-icon aria-hidden="true">link_off</mat-icon>
+    <span class="icon" aria-hidden="true">link_off</span>
     <span>No account is connected. <a routerLink="/connection">Connect one</a> to see repositories here.</span>
   </div>
 
   <div class="notice error" *ngIf="error()">
-    <mat-icon aria-hidden="true">error_outline</mat-icon>
+    <span class="icon" aria-hidden="true">error_outline</span>
     <span>{{ error() }}</span>
   </div>
 
@@ -114,7 +114,7 @@
           <span class="muted">Activity summary</span>
         </div>
         <button class="btn icon-only" (click)="close()" aria-label="Close summary">
-          <mat-icon aria-hidden="true">close</mat-icon>
+          <span class="icon" aria-hidden="true">close</span>
         </button>
       </div>
 
@@ -123,9 +123,9 @@
 
         <ng-container *ngIf="insight() as summary">
           <span class="source-chip" [class.model]="summary.source === 'model'">
-            <mat-icon aria-hidden="true">{{
+            <span class="icon" aria-hidden="true">{{
               summary.source === 'model' ? 'auto_awesome' : 'functions'
-            }}</mat-icon>
+            }}</span>
             {{ summary.source === 'model' ? 'Written by Claude' : 'Computed locally' }}
           </span>
 

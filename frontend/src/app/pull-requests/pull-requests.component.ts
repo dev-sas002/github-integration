@@ -1,6 +1,5 @@
 import { DatePipe, NgFor, NgIf } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
 import { StalePullRequest, StaleSeverity } from '../core/api.types';
 import { GithubApiService } from '../core/github-api.service';
@@ -29,7 +28,7 @@ const SEVERITY: Record<StaleSeverity, { label: string; icon: string }> = {
   standalone: true,
   templateUrl: './pull-requests.component.html',
   styleUrls: ['./pull-requests.component.css'],
-  imports: [NgIf, NgFor, DatePipe, RouterLink, MatIconModule],
+  imports: [NgIf, NgFor, DatePipe, RouterLink],
 })
 export class PullRequestsComponent implements OnInit {
   private readonly api = inject(GithubApiService);

@@ -1,7 +1,7 @@
 <header class="topbar">
   <div class="topbar-inner">
     <a class="brand" routerLink="/dashboard">
-      <mat-icon aria-hidden="true">hub</mat-icon>
+      <span class="icon" aria-hidden="true">hub</span>
       <span>Repo Sync</span>
     </a>
 
@@ -14,7 +14,7 @@
 
     <div class="account">
       <span class="chip" *ngIf="session.isConnected(); else signedOut">
-        <mat-icon aria-hidden="true">account_circle</mat-icon>{{ session.username() ?? 'Connected' }}
+        <span class="icon" aria-hidden="true">account_circle</span>{{ session.username() ?? 'Connected' }}
       </span>
       <ng-template #signedOut><span class="chip">Not connected</span></ng-template>
     </div>

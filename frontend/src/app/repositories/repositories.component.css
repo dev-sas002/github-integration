@@ -19,10 +19,8 @@
   margin-bottom: 16px;
 }
 
-.notice mat-icon {
+.notice .icon {
   font-size: 18px;
-  width: 18px;
-  height: 18px;
   flex: none;
 }
 
@@ -170,10 +168,8 @@ tr.row.selected td {
   letter-spacing: 0.02em;
 }
 
-.source-chip mat-icon {
+.source-chip .icon {
   font-size: 14px;
-  width: 14px;
-  height: 14px;
 }
 
 .source-chip.model {

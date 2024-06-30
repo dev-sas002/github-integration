@@ -1,6 +1,5 @@
 import { DatePipe, DecimalPipe, NgFor, NgIf } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
 import { GithubApiService } from '../core/github-api.service';
 import { Overview, SyncReport, SyncStateRow } from '../core/api.types';
@@ -51,7 +50,6 @@ const RESOURCE_LABELS: Record<string, string> = {
     DatePipe,
     DecimalPipe,
     RouterLink,
-    MatIconModule,
     StatTileComponent,
     ColumnChartComponent,
     BarListComponent,

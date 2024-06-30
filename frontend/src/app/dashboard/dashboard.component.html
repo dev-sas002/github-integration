@@ -14,23 +14,23 @@
     </div>
 
     <button class="btn btn-primary" (click)="sync()" [disabled]="syncing() || !session.isConnected()">
-      <mat-icon aria-hidden="true">sync</mat-icon>
+      <span class="icon" aria-hidden="true">sync</span>
       {{ syncing() ? 'Syncing…' : 'Sync now' }}
     </button>
   </div>
 
   <div class="notice error" *ngIf="error()">
-    <mat-icon aria-hidden="true">error_outline</mat-icon>
+    <span class="icon" aria-hidden="true">error_outline</span>
     <span>{{ error() }}</span>
   </div>
 
   <div class="notice" *ngIf="!session.isConnected()">
-    <mat-icon aria-hidden="true">link_off</mat-icon>
+    <span class="icon" aria-hidden="true">link_off</span>
     <span>No account is connected yet. <a routerLink="/connection">Connect one</a> to populate this dashboard.</span>
   </div>
 
   <div class="notice" *ngIf="lastReport() as report">
-    <mat-icon aria-hidden="true">check_circle_outline</mat-icon>
+    <span class="icon" aria-hidden="true">check_circle_outline</span>
     <span>
       {{ report.mode === 'full' ? 'Full' : 'Incremental' }} sync finished in
       {{ report.durationMs | number }} ms · {{ report.pagesFetched }} pages fetched ·
@@ -44,7 +44,7 @@
 
   <ng-container *ngIf="overview() as data">
     <div class="notice" *ngIf="data.counts.repositories === 0 && !syncing()">
-      <mat-icon aria-hidden="true">inbox</mat-icon>
+      <span class="icon" aria-hidden="true">inbox</span>
       <span>Nothing has been synced for this account yet. Press <strong>Sync now</strong> to run the pipeline.</span>
     </div>
 

@@ -1,6 +1,5 @@
 import { Component, inject } from '@angular/core';
 import { NgIf } from '@angular/common';
-import { MatIconModule } from '@angular/material/icon';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { SessionService } from './core/session.service';
 
@@ -16,7 +15,7 @@ import { SessionService } from './core/session.service';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, MatIconModule, NgIf],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, NgIf],
 })
 export class AppComponent {
   readonly session = inject(SessionService);

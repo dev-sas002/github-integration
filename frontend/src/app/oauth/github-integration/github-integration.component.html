@@ -7,14 +7,14 @@
   </div>
 
   <div class="notice error" *ngIf="errorMessage()">
-    <mat-icon aria-hidden="true">error_outline</mat-icon>
+    <span class="icon" aria-hidden="true">error_outline</span>
     <span>{{ errorMessage() }}</span>
   </div>
 
   <section class="card">
     <div class="card-body connection">
       <div class="identity">
-        <mat-icon class="logo" aria-hidden="true">code</mat-icon>
+        <span class="icon logo" aria-hidden="true">code</span>
         <div>
           <h2>GitHub</h2>
           <p class="secondary" *ngIf="session.isConnected(); else notConnected">
@@ -31,25 +31,25 @@
 
       <div class="actions" *ngIf="!session.isConnected()">
         <button class="btn btn-primary" (click)="connect()" [disabled]="!githubConfigured">
-          <mat-icon aria-hidden="true">link</mat-icon>
+          <span class="icon" aria-hidden="true">link</span>
           Connect with GitHub
         </button>
         <button class="btn" *ngIf="demoAvailable()" (click)="useDemoAccount()" [disabled]="busy()">
-          <mat-icon aria-hidden="true">play_circle_outline</mat-icon>
+          <span class="icon" aria-hidden="true">play_circle_outline</span>
           Open the demo account
         </button>
       </div>
 
       <div class="actions" *ngIf="session.isConnected()">
         <button class="btn" (click)="disconnect()" [disabled]="busy()">
-          <mat-icon aria-hidden="true">link_off</mat-icon>
+          <span class="icon" aria-hidden="true">link_off</span>
           Disconnect
         </button>
       </div>
     </div>
 
     <div class="card-body note" *ngIf="!githubConfigured">
-      <mat-icon aria-hidden="true">info_outline</mat-icon>
+      <span class="icon" aria-hidden="true">info_outline</span>
       <span>
         No GitHub OAuth app is configured on this deployment, so the connect flow is disabled. Set
         <code class="mono">GITHUB_CLIENT_ID</code> and <code class="mono">GITHUB_CLIENT_SECRET</code>

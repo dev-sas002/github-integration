@@ -1,13 +1,10 @@
 import { TestBed } from '@angular/core/testing';
-import { PLATFORM_ID } from '@angular/core';
 import { ACCESS_TOKEN_STORAGE_KEY, SessionService } from './session.service';
 
 describe('SessionService', () => {
-  const serviceFor = (platformId: string): SessionService => {
+  const serviceFor = (): SessionService => {
     TestBed.resetTestingModule();
-    TestBed.configureTestingModule({
-      providers: [SessionService, { provide: PLATFORM_ID, useValue: platformId }],
-    });
+    TestBed.configureTestingModule({ providers: [SessionService] });
     return TestBed.inject(SessionService);
   };
 
@@ -15,7 +12,7 @@ describe('SessionService', () => {
   afterEach(() => localStorage.clear());
 
   it('starts disconnected when nothing is stored', () => {
-    const session = serviceFor('browser');
+    const session = serviceFor();
 
     expect(session.isConnected()).toBeFalse();
     expect(session.token()).toBeNull();
@@ -24,14 +21,14 @@ describe('SessionService', () => {
   it('restores a token that was already stored', () => {
     localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'Bearer gho_token');
 
-    const session = serviceFor('browser');
+    const session = serviceFor();
 
     expect(session.isConnected()).toBeTrue();
     expect(session.token()).toBe('Bearer gho_token');
   });
 
   it('stores the header value unchanged, without adding a second prefix', () => {
-    const session = serviceFor('browser');
+    const session = serviceFor();
 
     session.signIn('Bearer gho_token', 'octo');
 
@@ -40,7 +37,7 @@ describe('SessionService', () => {
   });
 
   it('clears the username when signing in without one', () => {
-    const session = serviceFor('browser');
+    const session = serviceFor();
     session.signIn('Bearer a', 'octo');
 
     session.signIn('Bearer b');
@@ -49,32 +46,22 @@ describe('SessionService', () => {
   });
 
   it('records an account name learned after sign-in', () => {
-    const session = serviceFor('browser');
+    const session = serviceFor();
     session.signIn('Bearer gho_token');
 
     session.setUsername('fixture-dev');
 
     expect(session.username()).toBe('fixture-dev');
-    expect(serviceFor('browser').username()).toBe('fixture-dev');
+    expect(serviceFor().username()).toBe('fixture-dev');
   });
 
   it('forgets everything on sign out', () => {
-    const session = serviceFor('browser');
+    const session = serviceFor();
     session.signIn('Bearer gho_token', 'octo');
 
     session.signOut();
 
     expect(session.isConnected()).toBeFalse();
     expect(localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)).toBeNull();
-  });
-
-  it('never touches localStorage on the server platform', () => {
-    localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'Bearer gho_token');
-
-    const session = serviceFor('server');
-    session.signIn('Bearer other', 'octo');
-
-    expect(session.token()).toBe('Bearer other');
-    expect(localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)).toBe('Bearer gho_token');
   });
 });

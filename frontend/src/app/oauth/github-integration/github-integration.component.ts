@@ -1,6 +1,5 @@
-import { DatePipe, NgFor, NgIf, isPlatformBrowser } from '@angular/common';
-import { Component, Inject, OnInit, PLATFORM_ID, inject, signal } from '@angular/core';
-import { MatIconModule } from '@angular/material/icon';
+import { DatePipe, NgFor, NgIf } from '@angular/common';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ProviderSummary } from '../../core/api.types';
 import { GithubApiService } from '../../core/github-api.service';
@@ -22,7 +21,7 @@ import { GithubAuthService } from '../github-auth.service';
   standalone: true,
   templateUrl: './github-integration.component.html',
   styleUrls: ['./github-integration.component.css'],
-  imports: [NgIf, NgFor, DatePipe, MatIconModule, RouterLink],
+  imports: [NgIf, NgFor, DatePipe, RouterLink],
 })
 export class GithubIntegrationComponent implements OnInit {
   private readonly api = inject(GithubApiService);
@@ -39,20 +38,7 @@ export class GithubIntegrationComponent implements OnInit {
   protected readonly demoAvailable = signal(false);
   protected readonly busy = signal(false);
 
-  private readonly browser: boolean;
-
-  constructor(@Inject(PLATFORM_ID) platformId: object) {
-    this.browser = isPlatformBrowser(platformId);
-  }
-
   ngOnInit(): void {
-    // The page is prerendered at build time, where `window` does not exist
-    // and a relative API URL cannot be resolved — so every browser-only
-    // concern, including the network, is behind this check.
-    if (!this.browser) {
-      return;
-    }
-
     this.consumeTokenFromUrl();
 
     this.api.listProviders().subscribe({

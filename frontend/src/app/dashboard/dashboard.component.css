@@ -29,10 +29,8 @@
   margin-bottom: 16px;
 }
 
-.notice mat-icon {
+.notice .icon {
   font-size: 18px;
-  width: 18px;
-  height: 18px;
   flex: none;
 }
 

@@ -7,18 +7,18 @@
       </p>
     </div>
     <button class="btn" (click)="load()" [disabled]="loading() || !session.isConnected()">
-      <mat-icon aria-hidden="true">refresh</mat-icon>
+      <span class="icon" aria-hidden="true">refresh</span>
       Refresh
     </button>
   </div>
 
   <div class="notice" *ngIf="!session.isConnected()">
-    <mat-icon aria-hidden="true">link_off</mat-icon>
+    <span class="icon" aria-hidden="true">link_off</span>
     <span>No account is connected. <a routerLink="/connection">Connect one</a> to see pull requests here.</span>
   </div>
 
   <div class="notice error" *ngIf="error()">
-    <mat-icon aria-hidden="true">error_outline</mat-icon>
+    <span class="icon" aria-hidden="true">error_outline</span>
     <span>{{ error() }}</span>
   </div>
 
@@ -31,7 +31,7 @@
     <div class="card-body groups">
       <div class="group" *ngFor="let bucket of buckets()">
         <h3 class="group-head" [attr.data-severity]="bucket.severity">
-          <mat-icon aria-hidden="true">{{ bucket.icon }}</mat-icon>
+          <span class="icon" aria-hidden="true">{{ bucket.icon }}</span>
           {{ bucket.label }}
           <span class="muted">{{ bucket.items.length }}</span>
         </h3>

@@ -6,11 +6,9 @@
   margin-bottom: 16px;
 }
 
-.notice mat-icon,
-.note mat-icon {
+.notice .icon,
+.note .icon {
   font-size: 18px;
-  width: 18px;
-  height: 18px;
   flex: none;
 }
 
