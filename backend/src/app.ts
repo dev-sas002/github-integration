@@ -14,15 +14,16 @@ import syncRoutes from './routes/sync.router';
 // Registers every SourceProvider exactly once, before any route can resolve one.
 import './providers';
 
+/**
+ * Unknown origins get no CORS headers, so the browser keeps their scripts
+ * from reading responses. They are not failed outright: browsers send Origin
+ * on same-origin POSTs too, and the SPA reaches the API through its own
+ * proxy, so turning an unlisted origin into an error answered "Sync now"
+ * with a 500 whenever the site was opened under a host not in CORS_ORIGINS.
+ */
 const corsOptions: CorsOptions = {
   origin: (origin, callback) => {
-    // A missing Origin means a same-origin or non-browser caller (curl, the
-    // OAuth redirect); those are not subject to CORS in the first place.
-    if (!origin || appConfig.corsOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
+    callback(null, !origin || appConfig.corsOrigins.includes(origin));
   },
   credentials: true,
 };

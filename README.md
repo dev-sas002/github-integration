@@ -249,13 +249,13 @@ npm ci
 npm run seed            # writes the fabricated demo account
 npm run mock-github     # the api.github.com stand-in, on :4100
 npm run dev             # ts-node + nodemon on :3000
-npm test                # Vitest, 234 tests
+npm test                # Vitest, 236 tests
 npm run lint && npm run format:check
 
 cd ../frontend
 npm ci
 npm start               # ng serve on :4200, proxying /api to :3000
-npm test                # Karma + headless Chrome, 39 specs (set CHROME_BIN if needed)
+npm test                # Karma + headless Chrome, 40 specs (set CHROME_BIN if needed)
 npm run lint && npm run format:check
 npm run build
 ```
@@ -316,6 +316,9 @@ Each of these was fixed with a test that fails on the old code.
   out of access logs and `Referer` headers.
 - **A walk cut short by the page cap still advanced its watermark**, so the pages it never
   reached fell outside the next run's `since` for good. Walks are now resumable (above).
+- **An Origin missing from `CORS_ORIGINS` was a 500.** Browsers send Origin on same-origin
+  POSTs, so opening the proxied app under any other host name broke **Sync now**. Unlisted
+  origins now just get no CORS headers.
 - **The language filter only offered languages from the current page.** Picking one hid the
   rest. `GET /api/catalog/languages` now serves the whole account's list.
 
